@@ -358,44 +358,94 @@ int PN532::ntag2xxReadPage(uint8_t page, uint8_t *buffer) {
   return 0;
 }
 
-int PN532::ntag2xxEmulate(const uint8_t *uid, const uint8_t *data) {
-  printf("\nEmulating tag\n");
-  const uint8_t command2[] = { TxTgInitAsTarget,
-                                       TargetModePassiveOnly, // Endianness could be backwards
+int PN532::initAsTarget(uint8_t mode, const uint8_t *mifareParams, uint8_t responseBuffer[], const size_t responseBufferSize) {
+  printf("Initializing as target\n");
+  uint8_t command[] = {
+    TxTgInitAsTarget,
+    TargetModePassiveOnly,
 
-                                       // Mifare Params
-                                       0x00, 0x44, // SENS_RES read from tag
-                                       uid[0], uid[1], uid[2], // First 3 bytes of UID
-                                       0x00, // SEL_RES read from tag
+    // Mifare Params
+    0, 0, // SENS_RES read from tag
+    0, 0, 0, // First 3 bytes of UID
+    0, // SEL_RES read from tag
 
-                                       // FeliCa Params
-                                       0, 0, 0, 0, 0, 0, 0, 0, // 8 bytes NFCID2t
-                                       0, 0, 0, 0, 0, 0, 0, 0, // 8 bytes PAD
-                                       0, 0, // 2 bytes System Code
+    // FeliCa Params
+    0, 0, 0, 0, 0, 0, 0, 0, // 8 bytes NFCID2t
+    0, 0, 0, 0, 0, 0, 0, 0, // 8 bytes PAD
+    0, 0, // 2 bytes System Code
 
-                                       // NFCID3t
-                                       0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    // NFCID3t
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 
-                                       0, // Length of general bytes (max 47)
-                                       // General bytes would go here
+    0, // Length of general bytes (max 47)
+    // General bytes would go here
 
-                                       0, // Length of historical bytes (max 48)
-                                       // Historical bytes would go here
+    0, // Length of historical bytes (max 48)
+    // Historical bytes would go here
   };
 
-  const int commandSize = 1;
-  const uint8_t command[] = { TxTgGetInitiatorCommand };
+  memcpy(command + 2, mifareParams, 6);
+
+  return sendCommand(command, sizeof(command), responseBuffer, responseBufferSize);
+}
+
+int PN532::getInitiatorCommand(uint8_t *responseBuffer, const size_t responseBufferSize) {
+  const uint8_t command[] = { 0x88 };
+  return sendCommand(command, 1, responseBuffer, responseBufferSize);
+}
+
+int PN532::ntag2xxEmulate(const uint8_t *uid, const uint8_t *data) {
+  // TODO: Investigate what happens with FeliCa emulation
+
+  printf("\nEmulating tag\n");
+  const uint8_t mifareParams[] = {
+    0x44, 0x00, // SENS_RES read from tag
+    uid[0], uid[1], uid[2], // First 3 bytes of UID
+    0x00, // SEL_RES read from tag
+  };
+
   const int responseBufferSize = 300; // Initiator command can be up to 262
   uint8_t responseBuffer[responseBufferSize];
 
-  const int commandSize2 = sizeof(command2);
-  int responseSize2 = sendCommand(command2, commandSize2, responseBuffer, responseBufferSize);
-  printf("Initated\n");
-  printHex(responseBuffer, responseSize2);
+  int responseSize = initAsTarget(TargetModePassiveOnly, mifareParams, responseBuffer, responseBufferSize);
+  while (responseSize > 0) {
+    uint8_t responseCommand = responseBuffer[RESPONSE_PREFIX_LENGTH + 2];
 
-  int responseSize = sendCommand(command, commandSize, responseBuffer, responseBufferSize);
-  printf("Initiator command:\n");
-  printHex(responseBuffer, responseSize);
+    uint8_t *nextCommand;
+    int nextCommandSize;
+
+    switch (responseCommand) {
+    case NTAG21xReadPage: {
+      const int commandSize = 17;
+      uint8_t command[commandSize] = { TxTgResponseToInitiator, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+      uint8_t page = responseBuffer[RESPONSE_PREFIX_LENGTH + 3];
+      printf("Sending page: %X\n", page);
+      memcpy(command + 1, data + (page * 4), 16);
+
+      nextCommand = command;
+      nextCommandSize = commandSize;
+      break;
+    }
+
+    case NTAG21xHalt:
+      printf("Halting\n");
+      break;
+
+    default:
+      printf("Received unknown command: %X\n", responseCommand);
+      return -1;
+    }
+
+    responseSize = sendCommand(nextCommand, nextCommandSize, responseBuffer, responseBufferSize);
+
+    if (responseSize < 0) {
+      printf("Error sending response\n");
+      return -2;
+    }
+
+    printf("Getting next command\n");
+    responseSize = getInitiatorCommand(responseBuffer, responseBufferSize);
+  }
 
   return 0;
 }

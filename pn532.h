@@ -10,6 +10,8 @@ public:
   int sendCommand(const uint8_t *command, int commandSize, uint8_t *responseBuffer, const size_t responseBufferSize);
   int readTagId(uint8_t *idBuffer, uint8_t idBufferLength, uint8_t tagBaudRate);
   int setParameters(uint8_t parameters);
+  int initAsTarget(uint8_t mode, const uint8_t *mifareParams, uint8_t responseBuffer[], const size_t responseBufferSize);
+  int getInitiatorCommand(uint8_t responseBuffer[], const size_t responseBufferSize);
 
   int ntag2xxReadPage(uint8_t page, uint8_t *buffer);
   int ntag2xxEmulate(const uint8_t *uid, const uint8_t *data);
@@ -42,10 +44,14 @@ public:
     RxInDataExchange = 0x41,
     TxInListPassiveTarget = 0x4A,
     RxInListPassiveTarget = 0x4B,
+    TxTgGetData = 0x86,
+    RxTgGetData = 0x87,
     TxTgInitAsTarget = 0x8C,
     RxTgInitAsTarget = 0x8D,
     TxTgGetInitiatorCommand = 0x88,
     RxTgGetInitiatorCommand = 0x89,
+    TxTgResponseToInitiator = 0x90,
+    RxTgResponseToInitiator = 0x91,
   };
 
   enum TargetBaudRates {
@@ -65,9 +71,10 @@ public:
     SamConfigurationModeDualCard = 0x04,
   };
 
-  enum MifareCommands {
-    MifareReadPage = 0x30,
-    MifareWritePage = 0xA0,
+  enum NTAG21xCommands {
+    NTAG21xReadPage = 0x30,
+    NTAG21xWritePage = 0xA0,
+    NTAG21xHalt = 0x50,
   };
 
 private:

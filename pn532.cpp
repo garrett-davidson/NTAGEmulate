@@ -73,13 +73,28 @@ PN532::PN532(const char* portName) {
     exit(1);
   }
 
-  if (sp_open(port, SP_MODE_READ_WRITE) < 0) {
+  if (sp_open(port, SP_MODE_READ_WRITE) != SP_OK) {
     printf("Could not open port\n");
     exit(1);
   }
 
-  if (sp_set_baudrate(port, 115200) < 0) {
+  if (sp_set_baudrate(port, 115200) != SP_OK) {
     printf("Could not set baud\n");
+    exit(1);
+  }
+
+  if (sp_set_bits(port, 8) != SP_OK) {
+    printf("Could not set data bit\n");
+    exit(1);
+  }
+
+  if (sp_set_parity(port, SP_PARITY_NONE) != SP_OK) {
+    printf("Could not set parity bit\n");
+    exit(1);
+  }
+
+  if (sp_set_stopbits(port, 1) != SP_OK) {
+    printf("Coulld not set stop bits\n");
     exit(1);
   }
 }

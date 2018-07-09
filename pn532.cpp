@@ -33,7 +33,7 @@ void PN532::printFrame(const uint8_t *frame, const size_t frameLength) {
     // return;
   }
 
-  printf("Frame:\n");
+  printf("\nFrame:\n");
   uint8_t dataLength = frame[3] - 1;
 
   printf("Data length: %d\n", dataLength);
@@ -74,6 +74,8 @@ void PN532::printFrame(const uint8_t *frame, const size_t frameLength) {
     printHex(frame + RESPONSE_PREFIX_LENGTH + 2, dataLength - 2);
     break;
   }
+
+  printf("\n");
 }
 
 PN532::PN532(const char* portName) {
@@ -117,10 +119,10 @@ int PN532::wakeUp() {
     return -1;
   }
 
-  printf("Woke device\n");
+  printf("\nWoke device\n");
 
-  printf("Fetching firmware version\n");
-  const int responseBufferSize = 20;
+  printf("\nFetching firmware version\n");
+  const int responseBufferSize = 13;
   uint8_t responseBuffer[responseBufferSize];
   uint8_t command[1] = { TxGetFirmwareVersion };
   if (sendCommand(command, 1, responseBuffer, responseBufferSize) < 0) {

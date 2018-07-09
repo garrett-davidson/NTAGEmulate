@@ -131,14 +131,22 @@ int PN532::setUp() {
 }
 
 int PN532::sendCommand(const uint8_t *command, int commandSize, uint8_t *responseBuffer, const size_t responseBufferSize) {
-  if (sendFrame(command, commandSize) < 0) {
-    printf("Sending error\n");
-    return -1;
-  }
+  int ackResponse = -1;
+  while (ackResponse < 0) {
+    if (sendFrame(command, commandSize) < 0) {
+      printf("Sending error\n");
+      return -1;
+    }
 
-  if (awaitAck() < 0) {
-    printf("Ack error\n");
-    return -1;
+    ackResponse = awaitAck();
+
+    if (ackResponse == -2) {
+      printf("Did not receive ACK\n");
+      continue;
+    } else if (ackResponse < 0) {
+      printf("Ack error\n");
+      return -1;
+    }
   }
 
   int responseSize = 0;
@@ -189,7 +197,12 @@ int PN532::awaitAck() {
 
   const int bytesToRead = 6; // Full ACK/NACK and the useful part of error message
 
-  int responseSize = sp_blocking_read(port, buffer, bytesToRead, 0);
+  int responseSize = sp_blocking_read(port, buffer, bytesToRead, MAX_RESPONSE_TIME);
+
+  if (responseSize == 0) {
+    printf("Timed out waiting for ACK\n");
+    return -2;
+  }
 
   if (responseSize != bytesToRead) {
     printf("ACK read error: %d\n", responseSize);
@@ -215,7 +228,7 @@ int PN532::awaitAck() {
   default: // Error
     printf("Error:\n");
     printHex(buffer, responseSize);
-    return -2;
+    return -4;
   }
 
   printf("Unknown response:\n");
@@ -268,6 +281,7 @@ int PN532::readTagId(uint8_t *idBuffer, uint8_t idBufferLength, uint8_t tagBaudR
 }
 
 int PN532::samConfig(SamConfigurationMode mode, uint8_t timeout) {
+  printf("Configuring SAM\n");
   const int responseBufferSize = 50;
   uint8_t responseBuffer[responseBufferSize];
 

@@ -140,11 +140,28 @@ int PN532::wakeUp() {
 }
 
 int PN532::setUp() {
+  printf("Setting up\n");
   if (samConfig(SamConfigurationModeNormal) < 0) {
     printf("Error SAM config\n");
     return -1;
   }
   return 0;
+}
+
+int PN532::setParameters(uint8_t parameters) {
+  printf("Setting parameters\n");
+  const int commandSize = 2;
+  uint8_t command[commandSize] = { TxSetParameters, parameters };
+
+  const int responseBufferSize = 10;
+  uint8_t responseBuffer[responseBufferSize];
+
+  if (sendCommand(command, commandSize, responseBuffer, responseBufferSize) < 0) {
+    printf("Error setting parameters\n");
+    return -1;
+  }
+
+  return !(responseBuffer[RESPONSE_PREFIX_LENGTH] == 0x13);
 }
 
 int PN532::sendCommand(const uint8_t *command, int commandSize, uint8_t *responseBuffer, const size_t responseBufferSize) {

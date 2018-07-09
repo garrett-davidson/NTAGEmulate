@@ -9,6 +9,7 @@ public:
   int setUp();
   int sendCommand(const uint8_t *command, int commandSize, uint8_t *responseBuffer, const size_t responseBufferSize);
   int readTagId(uint8_t *idBuffer, uint8_t idBufferLength, uint8_t tagBaudRate);
+  int setParameters(uint8_t parameters);
 
   int ntag2xxReadPage(uint8_t page, uint8_t *buffer);
   int ntag2xxEmulate(const uint8_t *uid, const uint8_t *data);
@@ -52,9 +53,9 @@ public:
   };
 
   enum TargetModes {
-    TargetModePassiveOnly = 1 << 7,
-    TargetModeDEPOnly = 1 << 6,
-    TargetModePICCOnly = 1 << 5,
+    TargetModePassiveOnly = 1 << 0,
+    TargetModeDEPOnly = 1 << 1,
+    TargetModePICCOnly = 1 << 2,
   };
 
   enum SamConfigurationMode {

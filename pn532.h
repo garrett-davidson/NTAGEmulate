@@ -11,6 +11,7 @@ public:
   int readTagId(uint8_t *idBuffer, uint8_t idBufferLength, uint8_t tagBaudRate);
 
   int ntag2xxReadPage(uint8_t page, uint8_t *buffer);
+  int ntag2xxEmulate(const uint8_t *uid, const uint8_t *data);
 
   void printHex(const uint8_t buffer[], int size);
 
@@ -40,10 +41,20 @@ public:
     RxInDataExchange = 0x41,
     TxInListPassiveTarget = 0x4A,
     RxInListPassiveTarget = 0x4B,
+    TxTgInitAsTarget = 0x8C,
+    RxTgInitAsTarget = 0x8D,
+    TxTgGetInitiatorCommand = 0x88,
+    RxTgGetInitiatorCommand = 0x89,
   };
 
   enum TargetBaudRates {
     TypeABaudRate = 0x00, // 106 kbps ISO/IEC14443 Type A
+  };
+
+  enum TargetModes {
+    TargetModePassiveOnly = 1 << 7,
+    TargetModeDEPOnly = 1 << 6,
+    TargetModePICCOnly = 1 << 5,
   };
 
   enum SamConfigurationMode {

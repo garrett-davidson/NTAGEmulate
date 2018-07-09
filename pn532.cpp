@@ -5,7 +5,13 @@
 #include <stdlib.h>
 #include <string.h>
 
+#define DEBUGGING
+
+#ifdef DEBUGGING
+#define MAX_RESPONSE_TIME 100 // Bigger time out when debugging
+#else
 #define MAX_RESPONSE_TIME 15 // (ms) defined by PN532 spec
+#endif
 
 #define RESPONSE_PREFIX_LENGTH 6
 
@@ -331,6 +337,48 @@ int PN532::ntag2xxReadPage(uint8_t page, uint8_t *buffer) {
   printFrame(responseBuffer, responseSize);
 
   memcpy(buffer, responseBuffer + RESPONSE_PREFIX_LENGTH + 2, pageSize);
+
+  return 0;
+}
+
+int PN532::ntag2xxEmulate(const uint8_t *uid, const uint8_t *data) {
+  printf("\nEmulating tag\n");
+  const uint8_t command2[] = { TxTgInitAsTarget,
+                                       TargetModePassiveOnly, // Endianness could be backwards
+
+                                       // Mifare Params
+                                       0x00, 0x44, // SENS_RES read from tag
+                                       uid[0], uid[1], uid[2], // First 3 bytes of UID
+                                       0x00, // SEL_RES read from tag
+
+                                       // FeliCa Params
+                                       0, 0, 0, 0, 0, 0, 0, 0, // 8 bytes NFCID2t
+                                       0, 0, 0, 0, 0, 0, 0, 0, // 8 bytes PAD
+                                       0, 0, // 2 bytes System Code
+
+                                       // NFCID3t
+                                       0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+
+                                       0, // Length of general bytes (max 47)
+                                       // General bytes would go here
+
+                                       0, // Length of historical bytes (max 48)
+                                       // Historical bytes would go here
+  };
+
+  const int commandSize = 1;
+  const uint8_t command[] = { TxTgGetInitiatorCommand };
+  const int responseBufferSize = 300; // Initiator command can be up to 262
+  uint8_t responseBuffer[responseBufferSize];
+
+  const int commandSize2 = sizeof(command2);
+  int responseSize2 = sendCommand(command2, commandSize2, responseBuffer, responseBufferSize);
+  printf("Initated\n");
+  printHex(responseBuffer, responseSize2);
+
+  int responseSize = sendCommand(command, commandSize, responseBuffer, responseBufferSize);
+  printf("Initiator command:\n");
+  printHex(responseBuffer, responseSize);
 
   return 0;
 }

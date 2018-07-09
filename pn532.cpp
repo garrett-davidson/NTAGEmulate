@@ -50,7 +50,7 @@ void PN532::printFrame(const uint8_t *frame, const size_t frameLength) {
   printf("FrameType: %X\n", frameType);
 
   switch (frameType) {
-  case RxInListPassiveTarget:
+  case RxInListPassiveTarget: {
     printf("InListPassiveTarget\n");
     uint8_t tagCount = frame[RESPONSE_PREFIX_LENGTH + 1];
     printf("%d tag\n", tagCount);
@@ -63,6 +63,15 @@ void PN532::printFrame(const uint8_t *frame, const size_t frameLength) {
     printf("NFC ID Length: %d\n", idLen);
     printf("NFC ID: ");
     printHex(frame + RESPONSE_PREFIX_LENGTH + 7, idLen);
+    break;
+  }
+
+  case RxInDataExchange:
+    printf("InDataExchange\n");
+    printf("Status: %d\n", frame[RESPONSE_PREFIX_LENGTH + 1]);
+
+    printf("Data: ");
+    printHex(frame + RESPONSE_PREFIX_LENGTH + 2, dataLength - 2);
     break;
   }
 }
@@ -295,4 +304,31 @@ int PN532::samConfig(SamConfigurationMode mode, uint8_t timeout) {
   }
 
   return responseBuffer[RESPONSE_PREFIX_LENGTH + 0] == RxSAMConfiguration ? 0 : -2;
+}
+
+int PN532::ntag2xxReadPage(uint8_t page, uint8_t *buffer) {
+  const int pageSize = 16;
+
+  const int commandSize = 4;
+  uint8_t command[commandSize] = { TxInDataExchange,
+                                   1, // Selected tag
+                                   MifareReadPage,
+                                   page
+  };
+
+  const int responseBufferSize = 100; // Max returned data is 262
+  uint8_t responseBuffer[responseBufferSize];
+  int responseSize = sendCommand(command, commandSize, responseBuffer, responseBufferSize);
+
+  if (responseSize < 0) {
+    printf("Error reading page: %d\n", responseSize);
+    return -1;
+  }
+
+  printf("Read page:\n");
+  printFrame(responseBuffer, responseSize);
+
+  memcpy(buffer, responseBuffer + RESPONSE_PREFIX_LENGTH + 2, pageSize);
+
+  return 0;
 }

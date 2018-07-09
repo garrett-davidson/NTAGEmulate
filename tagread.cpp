@@ -21,5 +21,11 @@ int main(int argc, char **argv) {
   printf("Received id: ");
   device->printHex(idBuffer, receivedIdLength);
 
+  // TODO: Something in nfc-poll is important for SAMConfig to work
+  const int pageSize = 16;
+  uint8_t pageBuffer[pageSize];
+  device->ntag2xxReadPage(1, pageBuffer);
+  device->printHex(pageBuffer, 16);
+
   return 0;
 }

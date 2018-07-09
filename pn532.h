@@ -10,6 +10,8 @@ public:
   int sendCommand(const uint8_t *command, int commandSize, uint8_t *responseBuffer, const size_t responseBufferSize);
   int readTagId(uint8_t *idBuffer, uint8_t idBufferLength, uint8_t tagBaudRate);
 
+  int ntag2xxReadPage(uint8_t page, uint8_t *buffer);
+
   void printHex(const uint8_t buffer[], int size);
 
   enum NFCParameters {
@@ -34,6 +36,8 @@ public:
     RxSetParameters = 0x13,
     TxSAMConfiguration = 0x14,
     RxSAMConfiguration = 0x15,
+    TxInDataExchange = 0x40,
+    RxInDataExchange = 0x41,
     TxInListPassiveTarget = 0x4A,
     RxInListPassiveTarget = 0x4B,
   };
@@ -47,6 +51,11 @@ public:
     SamConfigurationModeVirtualCard = 0x02,
     SamConfigurationModeWiredCard = 0x03,
     SamConfigurationModeDualCard = 0x04,
+  };
+
+  enum MifareCommands {
+    MifareReadPage = 0x30,
+    MifareWritePage = 0xA0,
   };
 
 private:

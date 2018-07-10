@@ -5,6 +5,10 @@
 #include <stdlib.h>
 #include <string.h>
 
+#ifdef linux
+#define SP_MODE_READ_WRITE (sp_mode)(SP_MODE_READ | SP_MODE_WRITE)
+#endif
+
 #define DEBUGGING
 
 #ifdef DEBUGGING

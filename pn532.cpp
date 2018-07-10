@@ -346,7 +346,7 @@ int PN532::ntag2xxReadPage(uint8_t page, uint8_t *buffer) {
 
   const int responseBufferSize = 100; // Max returned data is 262
   uint8_t responseBuffer[responseBufferSize];
-  int responseSize = sendCommand(command, commandSize, responseBuffer, responseBufferSize);
+  int responseSize = sendCommand(command, commandSize, responseBuffer, responseBufferSize, MAX_RESPONSE_TIME);
 
   if (responseSize < 0) {
     printf("Error reading page: %d\n", responseSize);

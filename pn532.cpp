@@ -468,7 +468,7 @@ int PN532::ntag2xxEmulate(const uint8_t *uid, const uint8_t *data) {
   printf("\nEmulating tag\n");
   const uint8_t mifareParams[] = {
     0x44, 0x00, // SENS_RES read from tag
-    uid[0], uid[1], uid[2], // First 3 bytes of UID
+    0x01, 0x02, 0x03, // First 3 bytes of (fake) UID
     0x00, // SEL_RES read from tag
   };
 
@@ -520,6 +520,16 @@ int PN532::ntag2xxEmulate(const uint8_t *uid, const uint8_t *data) {
       printf("Sending page: %X\n", page);
       memcpy(command + 1, data + (page * 4), 16);
 
+      nextCommand = command;
+      nextCommandSize = commandSize;
+      break;
+    }
+
+    case NTAG21xRequest: {
+      printf("Got REQA\n");
+      printf("Replying with ATQA\n");
+      const int commandSize = 3;
+      uint8_t command[commandSize] = { TxTgResponseToInitiator, 0x44, 0x00 };
       nextCommand = command;
       nextCommandSize = commandSize;
       break;

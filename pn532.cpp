@@ -395,6 +395,28 @@ int PN532::getInitiatorCommand(uint8_t *responseBuffer, const size_t responseBuf
   return sendCommand(command, 1, responseBuffer, responseBufferSize);
 }
 
+int PN532::writeRegister(uint16_t registerAddress, uint8_t registerValue) {
+  const int commandSize = 4;
+  const uint8_t command[commandSize] = {
+    TxWriteRegister,
+    registerAddress >> 8, // High bytes of address
+    registerAddress & 0xFF, // Low bytes of address
+    registerValue,
+  };
+
+  const int responseBufferSize = 100;
+  uint8_t responseBuffer[responseBufferSize];
+  int responseSize = sendCommand(command, commandSize, responseBuffer, responseBufferSize);
+
+  if (responseBuffer[RESPONSE_PREFIX_LENGTH] != 0x09) {
+    printf("Error writing register\n");
+    printHex(responseBuffer, responseSize);
+    return -1;
+  }
+
+  return responseSize;
+}
+
 int PN532::ntag2xxEmulate(const uint8_t *uid, const uint8_t *data) {
   // TODO: Investigate what happens with FeliCa emulation
 

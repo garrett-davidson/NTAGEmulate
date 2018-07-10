@@ -16,6 +16,7 @@ public:
   int setParameters(uint8_t parameters);
   int initAsTarget(uint8_t mode, const uint8_t *mifareParams, uint8_t responseBuffer[], const size_t responseBufferSize);
   int getInitiatorCommand(uint8_t responseBuffer[], const size_t responseBufferSize);
+  int writeRegister(uint16_t registerAddress, uint8_t registerValue);
 
   int ntag2xxReadPage(uint8_t page, uint8_t *buffer);
   int ntag2xxEmulate(const uint8_t *uid, const uint8_t *data);
@@ -40,6 +41,8 @@ public:
     RxGetFirmwareVersion = 0x03,
     TxReadRegister = 0x06,
     RxReadRegister = 0x07,
+    TxWriteRegister = 0x08,
+    RxWriteRegister = 0x09,
     TxSetParameters = 0x12,
     RxSetParameters = 0x13,
     TxSAMConfiguration = 0x14,

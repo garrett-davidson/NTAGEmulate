@@ -168,10 +168,14 @@ int PN532::setParameters(uint8_t parameters) {
   return !(responseBuffer[RESPONSE_PREFIX_LENGTH] == 0x13);
 }
 
-int PN532::sendCommand(const uint8_t *command, int commandSize, uint8_t *responseBuffer, const size_t responseBufferSize) {
+int PN532::sendCommand(const uint8_t *command, int commandSize, uint8_t *responseBuffer, const size_t responseBufferSize, int timeout) {
+  // TODO: Fully implement timeout
+  // <0 = retry
+  //  0 = block indefinitely
+  // >0 = timeout value
   int ackResponse = 0;
   int responseSize = 0;
-  while (!ackResponse && !responseSize) {
+  do {
     printf("Sending command\n");
     if (sendFrame(command, commandSize) < 0) {
       printf("Sending error\n");
@@ -188,16 +192,22 @@ int PN532::sendCommand(const uint8_t *command, int commandSize, uint8_t *respons
       return -1;
     }
 
-    responseSize = getResponse(responseBuffer, responseBufferSize);
+    do {
+      responseSize = getResponse(responseBuffer, responseBufferSize);
+    } while (!timeout && !responseSize);
 
     if (responseSize < 0) {
       printf("Response error\n");
       return -1;
     }
-  }
+  } while (!ackResponse && !responseSize && timeout < 0);
 
-  printf("Got response:\n");
-  printHex(responseBuffer, responseSize);
+  if (responseSize > 0) {
+    printf("Got response:\n");
+    printHex(responseBuffer, responseSize);
+  } else {
+    printf("No response\n");
+  }
   return responseSize;
 }
 

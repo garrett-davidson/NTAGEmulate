@@ -420,6 +420,34 @@ int PN532::writeRegister(uint16_t registerAddress, uint8_t registerValue) {
 int PN532::ntag2xxEmulate(const uint8_t *uid, const uint8_t *data) {
   // TODO: Investigate what happens with FeliCa emulation
 
+  printf("\nSetting registers\n");
+  int responseSize = writeRegister(RegisterCIU_TxMode,
+                1 << 7 // TxCRCEn automatically handle CRC
+                | 0 // TxSpeed 000 = 106 kbit/s
+                | 0 << 3 // InvMod don't invert modulation
+                | 0 << 2 // TxMix don't mix SIGIN with internal coder
+                | 0 // TxFraming 00 = ISO14443A
+                );
+
+  if (responseSize < 0) {
+    printf("Error writing to tx register\n");
+    return -1;
+  }
+
+    responseSize = writeRegister(RegisterCIU_RxMode,
+                1 << 7 // TxCRCEn automatically handle CRC
+                | 0 // TxSpeed 000 = 106 kbit/s
+                | 1 << 3 // RxNoErr ignore invalid streams
+                | 0 << 2 //  RxMultiple  receive multiple frames at once
+                | 0 // RxFraming 00 = ISO14443A
+                );
+
+
+  if (responseSize < 0) {
+    printf("Error writing to tx register\n");
+    return -1;
+  }
+
   printf("\nEmulating tag\n");
   const uint8_t mifareParams[] = {
     0x44, 0x00, // SENS_RES read from tag
@@ -430,8 +458,38 @@ int PN532::ntag2xxEmulate(const uint8_t *uid, const uint8_t *data) {
   const int responseBufferSize = 300; // Initiator command can be up to 262
   uint8_t responseBuffer[responseBufferSize];
 
-  int responseSize = initAsTarget(TargetModePassiveOnly, mifareParams, responseBuffer, responseBufferSize);
+  responseSize = initAsTarget(TargetModePassiveOnly, mifareParams, responseBuffer, responseBufferSize);
+
+  printf("Got init:\n");
+  printFrame(responseBuffer, responseSize);
+
+  printf("Changing settings\n");
+  responseSize = writeRegister(RegisterCIU_RxMode, 0); // Disbable Rx CRC
+  if (responseSize < 0) {
+    printf("Error writing to rx register\n");
+    return -1;
+  }
+
+  responseSize = writeRegister(RegisterCIU_TxMode, 0); // Disable Tx CRC
+  if (responseSize < 0) {
+    printf("Error writing to rx register\n");
+    return -1;
+  }
+
+  responseSize = writeRegister(RegisterCIU_ManualRCV, 1 << 3); // Disable Parity
+
+  printf("Initialized\n");
   while (responseSize > 0) {
+    uint8_t status = responseBuffer[RESPONSE_PREFIX_LENGTH + 1];
+
+    if (status == 0x02) {
+      printf("CRC Error\n");
+      //writeRegister(uint16_t registerAddress, uint8_t registerValue)
+
+    } else {
+      printf("Status OK\n");
+    }
+
     uint8_t responseCommand = responseBuffer[RESPONSE_PREFIX_LENGTH + 2];
 
     uint8_t *nextCommand;
@@ -450,16 +508,22 @@ int PN532::ntag2xxEmulate(const uint8_t *uid, const uint8_t *data) {
       break;
     }
 
+    case 0xA0:
+    case 0x79:
     case NTAG21xHalt:
+      nextCommandSize = 0;
       printf("Halting\n");
+      //sleep(3);
       break;
+      // return 0;
 
     default:
       printf("Received unknown command: %X\n", responseCommand);
       return -1;
     }
 
-    responseSize = sendCommand(nextCommand, nextCommandSize, responseBuffer, responseBufferSize);
+    if (nextCommandSize)
+      responseSize = sendCommand(nextCommand, nextCommandSize, responseBuffer, responseBufferSize);
 
     if (responseSize < 0) {
       printf("Error sending response\n");

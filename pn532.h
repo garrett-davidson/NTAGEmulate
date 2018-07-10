@@ -79,9 +79,16 @@ public:
   };
 
   enum NTAG21xCommands {
+    NTAG21xRequest = 0x26,
     NTAG21xReadPage = 0x30,
     NTAG21xWritePage = 0xA0,
     NTAG21xHalt = 0x50,
+  };
+
+  enum Registers {
+    RegisterCIU_TxMode = 0x6302,
+    RegisterCIU_RxMode = 0x6303,
+    RegisterCIU_ManualRCV = 0x630D,
   };
 
 private:

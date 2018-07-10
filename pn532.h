@@ -83,7 +83,7 @@ public:
 
 private:
   struct sp_port *port;
-  int awaitResponse(uint8_t *responseBuffer, int responseBufferSize);
+  int getResponse(uint8_t *responseBuffer, int responseBufferSize);
   int awaitAck();
   int sendFrame(const uint8_t *data, int size);
   int samConfig(SamConfigurationMode mode, uint8_t timeout = 0);

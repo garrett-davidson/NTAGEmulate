@@ -169,8 +169,10 @@ int PN532::setParameters(uint8_t parameters) {
 }
 
 int PN532::sendCommand(const uint8_t *command, int commandSize, uint8_t *responseBuffer, const size_t responseBufferSize) {
-  int ackResponse = -1;
-  while (ackResponse < 0) {
+  int ackResponse = 0;
+  int responseSize = 0;
+  while (!ackResponse && !responseSize) {
+    printf("Sending command\n");
     if (sendFrame(command, commandSize) < 0) {
       printf("Sending error\n");
       return -1;
@@ -185,12 +187,13 @@ int PN532::sendCommand(const uint8_t *command, int commandSize, uint8_t *respons
       printf("Ack error\n");
       return -1;
     }
-  }
 
-  int responseSize = 0;
-  if ((responseSize = awaitResponse(responseBuffer, responseBufferSize)) < 0) {
-    printf("Response error\n");
-    return -1;
+    responseSize = getResponse(responseBuffer, responseBufferSize);
+
+    if (responseSize < 0) {
+      printf("Response error\n");
+      return -1;
+    }
   }
 
   printf("Got response:\n");
@@ -274,26 +277,11 @@ int PN532::awaitAck() {
   return -3;
 }
 
-int PN532::awaitResponse(uint8_t *responseBuffer, int responseBufferSize) {
+int PN532::getResponse(uint8_t *responseBuffer, int responseBufferSize) {
   int readSize = 0;
 
-  while (readSize < responseBufferSize) {
-    size_t size = sp_blocking_read(port, responseBuffer + readSize, responseBufferSize - readSize, MAX_RESPONSE_TIME);
-    if (size > 0) {
-      readSize += size;
-
-      if (readSize >= 4) { // Read enough to have a size
-        const int frameOverheadSize = 7;
-        int frameLength = responseBuffer[3];
-
-        if (readSize >= frameLength + frameOverheadSize) {
-          return readSize;
-        }
-      }
-    }
-    else { /* timeout */ }
-  }
-  return 0;
+  size_t size = sp_blocking_read(port, responseBuffer + readSize, responseBufferSize - readSize, MAX_RESPONSE_TIME);
+  return size;
 }
 
 int PN532::readTagId(uint8_t *idBuffer, uint8_t idBufferLength, uint8_t tagBaudRate) {

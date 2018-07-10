@@ -387,7 +387,7 @@ int PN532::initAsTarget(uint8_t mode, const uint8_t *mifareParams, uint8_t respo
 
   memcpy(command + 2, mifareParams, 6);
 
-  return sendCommand(command, sizeof(command), responseBuffer, responseBufferSize);
+  return sendCommand(command, sizeof(command), responseBuffer, responseBufferSize, 0);
 }
 
 int PN532::getInitiatorCommand(uint8_t *responseBuffer, const size_t responseBufferSize) {

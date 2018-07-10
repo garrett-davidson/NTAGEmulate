@@ -288,9 +288,7 @@ int PN532::awaitAck() {
 }
 
 int PN532::getResponse(uint8_t *responseBuffer, int responseBufferSize) {
-  int readSize = 0;
-
-  size_t size = sp_blocking_read(port, responseBuffer + readSize, responseBufferSize - readSize, MAX_RESPONSE_TIME);
+  size_t size = sp_blocking_read(port, responseBuffer, responseBufferSize, MAX_RESPONSE_TIME);
   return size;
 }
 

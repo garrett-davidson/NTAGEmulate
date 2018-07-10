@@ -3,12 +3,15 @@
 #include <libserialport.h>
 #include <stdio.h>
 
-const char *portName = "/dev/tty.usbserial";
-
 int main(int argc, char **argv) {
+  if (argc != 2) {
+    printf("Please specify port\n");
+    return -1;
+  }
+
   printf("Initializing NFC adapter\n");
 
-  PN532 *device = new PN532(portName);
+  PN532 *device = new PN532(argv[1]);
 
   if (device->wakeUp() < 0) { return -1; };
   if (device->setUp() < 0) { return -1; };

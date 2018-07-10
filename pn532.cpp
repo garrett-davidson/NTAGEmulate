@@ -335,10 +335,11 @@ int PN532::ntag2xxReadPage(uint8_t page, uint8_t *buffer) {
   const int pageSize = 16;
 
   const int commandSize = 4;
-  uint8_t command[commandSize] = { TxInDataExchange,
-                                   1, // Selected tag
-                                   MifareReadPage,
-                                   page
+  uint8_t command[commandSize] = {
+    TxInDataExchange,
+    1, // Selected tag
+    NTAG21xReadPage,
+    page
   };
 
   const int responseBufferSize = 100; // Max returned data is 262

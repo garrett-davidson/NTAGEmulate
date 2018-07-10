@@ -1,5 +1,9 @@
 #include <stdlib.h>
 
+#ifdef linux
+#include <stdint.h>
+#endif
+
 struct sp_port;
 
 class PN532 {

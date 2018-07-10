@@ -83,6 +83,22 @@ void PN532::printFrame(const uint8_t *frame, const size_t frameLength) {
     printf("Data: ");
     printHex(frame + RESPONSE_PREFIX_LENGTH + 2, dataLength - 2);
     break;
+
+  case TxTgInitAsTarget:
+    printf("TgInitAsTarget\n");
+    break;
+
+  case RxTgInitAsTarget:
+    printf("TgInitastarget\n");
+    break;
+
+  case RxTgGetInitiatorCommand:
+    printf("TgGetInitiatorCommand\n");
+    break;
+
+  default:
+    printf("Unknown frame type: %X\n", frameType);
+    break;
   }
 
   printf("\n");
@@ -238,6 +254,7 @@ int PN532::sendFrame(const uint8_t *data, int size) {
 
   printf("Writing:\n");
   printHex(buffer, totalSize);
+  printFrame(buffer, totalSize);
 
   return sp_blocking_write(port, buffer, totalSize, 10000) != totalSize;
 }

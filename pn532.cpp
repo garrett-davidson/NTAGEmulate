@@ -39,8 +39,11 @@ void PN532::printFrame(const uint8_t *frame, const size_t frameLength) {
   }
 
   if (frameLength == 8) { // Probably error
-    // TODO: Print error
-    // return;
+    printf("Error!\n");
+
+    printf("Error length: %d\n", frame[3]);
+    printf("Error code: %X\n", frame[5]);
+    return;
   }
 
   printf("\nFrame:\n");
@@ -60,6 +63,30 @@ void PN532::printFrame(const uint8_t *frame, const size_t frameLength) {
   printf("FrameType: %X\n", frameType);
 
   switch (frameType) {
+  case TxInDataExchange:
+    printf("InDataExchange\n");
+    break;
+
+  case RxInDataExchange:
+    printf("InDataExchange\n");
+    printf("Status: %X\n", frame[RESPONSE_PREFIX_LENGTH + 1]);
+
+    printf("Data: ");
+    printHex(frame + RESPONSE_PREFIX_LENGTH + 2, dataLength - 2);
+    break;
+
+  case TxInCommunicateThrough:
+    printf("InCommunicateThrough\n");
+    break;
+
+  case RxInCommunicateThrough:
+    printf("InCommunicateThrough\n");
+    printf("Status: %X\n", frame[RESPONSE_PREFIX_LENGTH + 1]);
+
+    printf("Data: ");
+    printHex(frame + RESPONSE_PREFIX_LENGTH + 2, dataLength - 2);
+    break;
+
   case RxInListPassiveTarget: {
     printf("InListPassiveTarget\n");
     uint8_t tagCount = frame[RESPONSE_PREFIX_LENGTH + 1];
@@ -75,14 +102,6 @@ void PN532::printFrame(const uint8_t *frame, const size_t frameLength) {
     printHex(frame + RESPONSE_PREFIX_LENGTH + 7, idLen);
     break;
   }
-
-  case RxInDataExchange:
-    printf("InDataExchange\n");
-    printf("Status: %d\n", frame[RESPONSE_PREFIX_LENGTH + 1]);
-
-    printf("Data: ");
-    printHex(frame + RESPONSE_PREFIX_LENGTH + 2, dataLength - 2);
-    break;
 
   case TxTgInitAsTarget:
     printf("TgInitAsTarget\n");

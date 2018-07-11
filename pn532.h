@@ -101,6 +101,10 @@ private:
   struct sp_port *port;
   bool shouldQuit;
 
+  static const size_t serialBufferSize = 500;
+  uint8_t serialBuffer[serialBufferSize];
+  size_t readSize;
+
   int getResponse(uint8_t *responseBuffer, int responseBufferSize, int timeout);
   int awaitAck();
   int sendFrame(const uint8_t *data, int size);

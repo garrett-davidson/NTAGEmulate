@@ -24,35 +24,19 @@
 int PN532::readSerialFrame(uint8_t *buffer, const size_t bufferSize, int timeout) {
   log(LogChannelSerial, "Reading serial frame\n");
 
-  size_t readSize = 0;
   size_t expectedSize = 0;
-  while (readSize < bufferSize) {
-    size_t lastRead = sp_blocking_read_next(port, buffer + readSize, bufferSize - readSize, timeout);
-    readSize += lastRead;
-    if (lastRead <= 0) {
-      if (!lastRead) {
-        log(LogChannelSerial, "Timeout\n");
-      } else {
-        log(LogChannelSerial, "Serial error %d\n", lastRead);
-      }
-      return lastRead;
-    }
-
-    if (buffer[0] != 0x00) {
-      log(LogChannelSerial, "Received unknown start of frame: %X\n", buffer[0]);
-    }
-
+  while (readSize <= bufferSize) {
     if (!expectedSize && readSize >= 4) {
       // Byte 4 tells us the length
-      uint8_t length = buffer[3];
+      uint8_t length = serialBuffer[3];
 
       switch (length) {
       case 0: // Start of ACK code
         if (readSize >= 5) {
-          if (buffer[4] == 0xFF) { // End of ACK code
+          if (serialBuffer[4] == 0xFF) { // End of ACK code
             expectedSize = 6;
           } else {
-            log(LogChannelSerial, "Received unknown frame code: %X\n", buffer[4]);
+            log(LogChannelSerial, "Received unknown frame code: %X\n", serialBuffer[4]);
             return -1;
           }
         }
@@ -60,7 +44,7 @@ int PN532::readSerialFrame(uint8_t *buffer, const size_t bufferSize, int timeout
 
       case 0xFF: // Start of NACK code or Extended Information Frame code
         if (readSize >= 5) {
-          uint8_t nextByte = buffer[4];
+          uint8_t nextByte = serialBuffer[4];
           switch (nextByte) {
           case 0x00: // End of NACK code
             expectedSize = 6;
@@ -85,20 +69,48 @@ int PN532::readSerialFrame(uint8_t *buffer, const size_t bufferSize, int timeout
         expectedSize = length + 7; // Provided length + 7 bytes of frame overhead
         break;
       }
-    } else if (expectedSize) {
-      if (readSize == expectedSize) {
-        if (buffer[readSize - 1] != 0x00) {
-          log(LogChannelSerial, "Read incorrect postamble: %d\n", buffer[readSize - 1]);
+    }
+
+    if (expectedSize) {
+      if (readSize >= expectedSize) {
+        if (serialBuffer[expectedSize - 1] != 0x00) {
+          log(LogChannelSerial, "Read incorrect postamble: %d\n", serialBuffer[expectedSize - 1]);
         }
-        return readSize;
-      } else if (readSize > expectedSize) {
-        log(LogChannelSerial, "Read too much data: %d > %d\n", readSize, expectedSize);
-        printHex(buffer, readSize);
+
+        memcpy(buffer, serialBuffer, expectedSize); // Copy full expected frame into buffer
+
+        if (readSize > expectedSize) {
+          if (serialBuffer[expectedSize] == 0x00) { // Probably started reading next frame
+            memcpy(serialBuffer, serialBuffer + expectedSize, readSize - expectedSize); // Move the rest of the data to the start of serialBuffer for the next read
+          }
+        }
+
+        readSize = readSize - expectedSize; // Set readSize for next read
+
+        return expectedSize;
       }
+    }
+
+    // Read at end of loop in case we received 2 full frames last time
+    size_t lastRead = sp_blocking_read_next(port, serialBuffer + readSize, bufferSize - readSize, timeout);
+    readSize += lastRead;
+    if (lastRead <= 0) {
+      if (!lastRead) {
+        log(LogChannelSerial, "Timeout\n");
+        log(LogChannelSerial, "%d %d %d\n", expectedSize, lastRead, readSize);
+        printHex(serialBuffer, readSize);
+      } else {
+        log(LogChannelSerial, "Serial error %d\n", lastRead);
+      }
+      return lastRead;
+    }
+
+    if (serialBuffer[0] != 0x00) {
+      log(LogChannelSerial, "Received unknown start of frame: %X\n", serialBuffer[0]);
     }
   }
 
-  log(LogChannelSerial, "Buffer full\n");
+  log(LogChannelSerial, "Buffer full: %d > %d\n", readSize, bufferSize);
   return readSize;
 }
 
@@ -238,6 +250,7 @@ PN532::PN532(const char* portName) {
   }
 
   shouldQuit = false;
+  readSize = 0;
 }
 
 int PN532::wakeUp() {
@@ -359,7 +372,7 @@ int PN532::awaitAck() {
 
   const int bytesToRead = 6; // Full ACK/NACK and the useful part of error message
 
-  int responseSize = sp_blocking_read(port, buffer, bytesToRead, MAX_RESPONSE_TIME);
+  int responseSize = readSerialFrame(buffer, bufferSize, MAX_RESPONSE_TIME);
 
   if (responseSize == 0) {
     printf("Timed out waiting for ACK\n");

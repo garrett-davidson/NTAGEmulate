@@ -134,6 +134,8 @@ PN532::PN532(const char* portName) {
     printf("Coulld not set stop bits\n");
     exit(1);
   }
+
+  shouldQuit = false;
 }
 
 int PN532::wakeUp() {
@@ -210,12 +212,15 @@ int PN532::sendCommand(const uint8_t *command, int commandSize, uint8_t *respons
 
     do {
       responseSize = getResponse(responseBuffer, responseBufferSize);
+      if (shouldQuit) return 0;
     } while (!timeout && !responseSize);
 
     if (responseSize < 0) {
       printf("Response error\n");
       return -1;
     }
+
+    if (shouldQuit) return 0;
   } while (!ackResponse && !responseSize && timeout < 0);
 
   if (responseSize > 0) {
@@ -497,6 +502,8 @@ int PN532::ntag2xxEmulate(const uint8_t *uid, const uint8_t *data) {
 
   printf("Initialized\n");
   while (responseSize > 0) {
+    if (shouldQuit) return 0;
+
     uint8_t status = responseBuffer[RESPONSE_PREFIX_LENGTH + 1];
 
     if (status == 0x02) {
@@ -562,4 +569,19 @@ int PN532::ntag2xxEmulate(const uint8_t *uid, const uint8_t *data) {
   }
 
   return 0;
+}
+
+void PN532::close() {
+  printf("Closing port\n");
+  shouldQuit = true;
+  if (port) {
+    sp_close(port);
+    port = NULL;
+    printf("Port closed\n");
+  }
+}
+
+PN532::~PN532() {
+  printf("Destructing\n");
+  close();
 }

@@ -9,6 +9,9 @@ struct sp_port;
 class PN532 {
 public:
   PN532(const char *portName);
+  ~PN532();
+  void close();
+
   int wakeUp();
   int setUp();
   int sendCommand(const uint8_t *command, int commandSize, uint8_t *responseBuffer, const size_t responseBufferSize, int timeout = -1);
@@ -93,6 +96,8 @@ public:
 
 private:
   struct sp_port *port;
+  bool shouldQuit;
+
   int getResponse(uint8_t *responseBuffer, int responseBufferSize);
   int awaitAck();
   int sendFrame(const uint8_t *data, int size);

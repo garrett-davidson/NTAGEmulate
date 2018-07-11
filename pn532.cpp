@@ -21,6 +21,87 @@
 
 #define RESPONSE_PREFIX_LENGTH 6
 
+int PN532::readSerialFrame(uint8_t *buffer, const size_t bufferSize, int timeout) {
+  log(LogChannelSerial, "Reading serial frame\n");
+
+  size_t readSize = 0;
+  size_t expectedSize = 0;
+  while (readSize < bufferSize) {
+    size_t lastRead = sp_blocking_read_next(port, buffer + readSize, bufferSize - readSize, timeout);
+    readSize += lastRead;
+    if (lastRead <= 0) {
+      if (!lastRead) {
+        log(LogChannelSerial, "Timeout\n");
+      } else {
+        log(LogChannelSerial, "Serial error %d\n", lastRead);
+      }
+      return lastRead;
+    }
+
+    if (buffer[0] != 0x00) {
+      log(LogChannelSerial, "Received unknown start of frame: %X\n", buffer[0]);
+    }
+
+    if (!expectedSize && readSize >= 4) {
+      // Byte 4 tells us the length
+      uint8_t length = buffer[3];
+
+      switch (length) {
+      case 0: // Start of ACK code
+        if (readSize >= 5) {
+          if (buffer[4] == 0xFF) { // End of ACK code
+            expectedSize = 6;
+          } else {
+            log(LogChannelSerial, "Received unknown frame code: %X\n", buffer[4]);
+            return -1;
+          }
+        }
+        break;
+
+      case 0xFF: // Start of NACK code or Extended Information Frame code
+        if (readSize >= 5) {
+          uint8_t nextByte = buffer[4];
+          switch (nextByte) {
+          case 0x00: // End of NACK code
+            expectedSize = 6;
+            break;
+
+          case 0xFF: // End of Extended Information Frame code
+            printf("*******TODO: Handle extended information frame*********\n");
+            return -1;
+
+          default:
+            log(LogChannelSerial, "Received unknown frame code: %X\n", nextByte);
+            return -1;
+          }
+        }
+        break;
+
+      case 0x01: // Error frame
+        expectedSize = 8;
+        break;
+
+      default: // Information packet
+        expectedSize = length + 7; // Provided length + 7 bytes of frame overhead
+        break;
+      }
+    } else if (expectedSize) {
+      if (readSize == expectedSize) {
+        if (buffer[readSize - 1] != 0x00) {
+          log(LogChannelSerial, "Read incorrect postamble: %d\n", buffer[readSize - 1]);
+        }
+        return readSize;
+      } else if (readSize > expectedSize) {
+        log(LogChannelSerial, "Read too much data: %d > %d\n", readSize, expectedSize);
+        printHex(buffer, readSize);
+      }
+    }
+  }
+
+  log(LogChannelSerial, "Buffer full\n");
+  return readSize;
+}
+
 void PN532::printHex(const uint8_t buffer[], int size) {
   for (int i = 0; i < size; i++) {
     printf("%02X ", buffer[i]);
@@ -221,14 +302,6 @@ int PN532::sendCommand(const uint8_t *command, int commandSize, uint8_t *respons
 
     ackResponse = awaitAck();
 
-    if (ackResponse == -2) {
-      printf("Did not receive ACK\n");
-      continue;
-    } else if (ackResponse < 0) {
-      printf("Ack error\n");
-      return -1;
-    }
-
     responseSize = getResponse(responseBuffer, responseBufferSize, timeout * 10);
 
     if (responseSize < 0) {
@@ -237,7 +310,7 @@ int PN532::sendCommand(const uint8_t *command, int commandSize, uint8_t *respons
     }
 
     if (shouldQuit) return 0;
-  } while (!ackResponse && !responseSize && timeout < 0);
+  } while (!ackResponse && !responseSize);
 
   if (responseSize > 0) {
     printf("Got response:\n");
@@ -290,7 +363,7 @@ int PN532::awaitAck() {
 
   if (responseSize == 0) {
     printf("Timed out waiting for ACK\n");
-    return -2;
+    return responseSize;
   }
 
   if (responseSize != bytesToRead) {
@@ -303,7 +376,7 @@ int PN532::awaitAck() {
   case 0:
     if (buffer[4] == 0xFF) { // ACK
       printf("ACK\n");
-      return 0;
+      return 1;
     }
     break;
 
@@ -326,7 +399,7 @@ int PN532::awaitAck() {
 }
 
 int PN532::getResponse(uint8_t *responseBuffer, int responseBufferSize, int timeout) {
-  size_t size = sp_blocking_read(port, responseBuffer, responseBufferSize, timeout);
+  size_t size = readSerialFrame(responseBuffer, responseBufferSize, timeout);
   return size;
 }
 

@@ -105,4 +105,5 @@ private:
   int awaitAck();
   int sendFrame(const uint8_t *data, int size);
   int samConfig(SamConfigurationMode mode, uint8_t timeout = 0);
+  int readSerialFrame(uint8_t *buffer, const size_t bufferSize, int timeout);
 };

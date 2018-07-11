@@ -3,12 +3,14 @@
 #include <libserialport.h>
 #include <signal.h>
 #include <stdio.h>
+#include <unistd.h>
 
 PN532 *device;
 
 bool shouldQuit = false;
 void signalHandler(int signal) {
   shouldQuit = true;
+  printf("Signal: %d\n", signal);
   device->close();
 }
 
@@ -31,7 +33,13 @@ int main(int argc, char **argv) {
     const int idLength = 7;
     uint8_t idBuffer[idLength];
     printf("Fetching tag id\n");
-    int receivedIdLength = device->readTagId(idBuffer, idLength, PN532::TypeABaudRate);
+
+    int receivedIdLength = 0;
+
+    while (!receivedIdLength && !shouldQuit) {
+      device->readTagId(idBuffer, idLength, PN532::TypeABaudRate);
+      sleep(1);
+    }
 
     printf("Received id: ");
     device->printHex(idBuffer, receivedIdLength);

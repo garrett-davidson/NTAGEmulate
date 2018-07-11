@@ -335,7 +335,7 @@ int PN532::readTagId(uint8_t *idBuffer, uint8_t idBufferLength, uint8_t tagBaudR
   const int responseBufferSize = 100;
   uint8_t responseBuffer[responseBufferSize];
 
-  int responseSize = sendCommand(command, commandLength, responseBuffer, responseBufferSize);
+  int responseSize = sendCommand(command, commandLength, responseBuffer, responseBufferSize, 100);
   if (responseSize < 0) {
     printf("Error reading tag id\n");
     return -1;
@@ -358,11 +358,12 @@ int PN532::samConfig(SamConfigurationMode mode, uint8_t timeout) {
   const int commandSize = 3;
   uint8_t command[commandSize] = { TxSAMConfiguration, mode, timeout };
 
-  int responseSize = sendCommand(command, commandSize, responseBuffer, responseBufferSize);
-  if (responseSize < 0) {
+  int responseSize = sendCommand(command, commandSize, responseBuffer, responseBufferSize, MAX_RESPONSE_TIME);
+  if (responseSize <= 0) {
     printf("SAM config error: %d\n", responseSize);
     return -1;
   }
+  printf("SAM configured\n");
 
   return responseBuffer[RESPONSE_PREFIX_LENGTH + 0] == RxSAMConfiguration ? 0 : -2;
 }

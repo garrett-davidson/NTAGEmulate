@@ -1,3 +1,4 @@
 tagemulate
 pn532.o
 tagread
+logger.o

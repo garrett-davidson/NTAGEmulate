@@ -1,3 +1,4 @@
+#include "logger.h"
 #include "pn532.h"
 
 #include <libserialport.h>
@@ -19,6 +20,8 @@ int main(int argc, char **argv) {
     printf("Please specify port\n");
     return -1;
   }
+
+  LogLevel = 0xFF;
 
   printf("Initializing NFC adapter\n");
 

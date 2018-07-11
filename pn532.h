@@ -14,7 +14,7 @@ public:
 
   int wakeUp();
   int setUp();
-  int sendCommand(const uint8_t *command, int commandSize, uint8_t *responseBuffer, const size_t responseBufferSize, int timeout = -1);
+  int sendCommand(const uint8_t *command, int commandSize, uint8_t *responseBuffer, const size_t responseBufferSize, int timeout = 0);
   int readTagId(uint8_t *idBuffer, uint8_t idBufferLength, uint8_t tagBaudRate);
   int setParameters(uint8_t parameters);
   int initAsTarget(uint8_t mode, const uint8_t *mifareParams, uint8_t responseBuffer[], const size_t responseBufferSize);
@@ -25,6 +25,7 @@ public:
   int ntag2xxEmulate(const uint8_t *uid, const uint8_t *data);
 
   void printHex(const uint8_t buffer[], int size);
+  void printFrame(const uint8_t *frame, const size_t frameLength);
 
   enum NFCParameters {
     fNADUsed = 1 << 0, // Use Network ADdress for initiator
@@ -52,6 +53,8 @@ public:
     RxSAMConfiguration = 0x15,
     TxInDataExchange = 0x40,
     RxInDataExchange = 0x41,
+    TxInCommunicateThrough = 0x42,
+    RxInCommunicateThrough = 0x43,
     TxInListPassiveTarget = 0x4A,
     RxInListPassiveTarget = 0x4B,
     TxTgGetData = 0x86,
@@ -98,9 +101,8 @@ private:
   struct sp_port *port;
   bool shouldQuit;
 
-  int getResponse(uint8_t *responseBuffer, int responseBufferSize);
+  int getResponse(uint8_t *responseBuffer, int responseBufferSize, int timeout);
   int awaitAck();
   int sendFrame(const uint8_t *data, int size);
   int samConfig(SamConfigurationMode mode, uint8_t timeout = 0);
-  void printFrame(const uint8_t *frame, const size_t frameLength);
 };

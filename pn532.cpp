@@ -206,10 +206,8 @@ int PN532::setParameters(uint8_t parameters) {
 }
 
 int PN532::sendCommand(const uint8_t *command, int commandSize, uint8_t *responseBuffer, const size_t responseBufferSize, int timeout) {
-  // TODO: Fully implement timeout
-  // <0 = retry
   //  0 = block indefinitely
-  // >0 = timeout value
+  // >0 = timeout (ms)
   int ackResponse = 0;
   int responseSize = 0;
   do {
@@ -229,10 +227,7 @@ int PN532::sendCommand(const uint8_t *command, int commandSize, uint8_t *respons
       return -1;
     }
 
-    do {
-      responseSize = getResponse(responseBuffer, responseBufferSize);
-      if (shouldQuit) return 0;
-    } while (!timeout && !responseSize);
+    responseSize = getResponse(responseBuffer, responseBufferSize, timeout * 10);
 
     if (responseSize < 0) {
       printf("Response error\n");
@@ -246,7 +241,7 @@ int PN532::sendCommand(const uint8_t *command, int commandSize, uint8_t *respons
     printf("Got response:\n");
     printHex(responseBuffer, responseSize);
   } else {
-    printf("No response\n");
+    printf("No response: %d\n", responseSize);
   }
   return responseSize;
 }
@@ -328,8 +323,8 @@ int PN532::awaitAck() {
   return -3;
 }
 
-int PN532::getResponse(uint8_t *responseBuffer, int responseBufferSize) {
-  size_t size = sp_blocking_read(port, responseBuffer, responseBufferSize, MAX_RESPONSE_TIME);
+int PN532::getResponse(uint8_t *responseBuffer, int responseBufferSize, int timeout) {
+  size_t size = sp_blocking_read(port, responseBuffer, responseBufferSize, timeout);
   return size;
 }
 

@@ -37,7 +37,7 @@ int main(int argc, char **argv) {
     int receivedIdLength = 0;
 
     while (!receivedIdLength && !shouldQuit) {
-      device->readTagId(idBuffer, idLength, PN532::TypeABaudRate);
+      receivedIdLength = device->readTagId(idBuffer, idLength, PN532::TypeABaudRate);
       sleep(1);
     }
 

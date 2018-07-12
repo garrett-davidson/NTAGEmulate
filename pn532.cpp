@@ -198,6 +198,8 @@ void PN532::printFrame(const uint8_t *frame, const size_t frameLength) {
 
   case TxInCommunicateThrough:
     printf("InCommunicateThrough\n");
+    printf("Sending data: ");
+    printHex(frame + RESPONSE_PREFIX_LENGTH + 1, dataLength - 1);
     break;
 
   case RxInCommunicateThrough:
@@ -385,6 +387,7 @@ int PN532::sendCommand(const uint8_t *command, int commandSize, uint8_t *respons
   if (responseSize > 0) {
     printf("Got response:\n");
     printHex(responseBuffer, responseSize);
+    printFrame(responseBuffer, responseSize);
   } else {
     printf("No response: %d\n", responseSize);
   }

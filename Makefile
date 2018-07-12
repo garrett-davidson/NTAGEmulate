@@ -1,4 +1,7 @@
-all: logger tagemulate tagread tagmanualread pn532
+all: iso14443a-utils logger tagemulate tagread tagmanualread pn532
+
+iso14443a-utils: iso14443a-utils.cpp
+	$(CXX) -c iso14443a-utils.cpp -o iso14443a-utils.o
 
 logger: logger.cpp
 	$(CXX) -c logger.cpp -o logger.o
@@ -13,4 +16,4 @@ tagread: tagread.cpp pn532 logger
 	$(CXX) pn532.o logger.o tagread.cpp -o tagread -lserialport
 
 tagmanualread: tagmanualread.cpp pn532 logger
-	$(CXX) pn532.o logger.o tagmanualread.cpp -o tagmanualread -lserialport
+	$(CXX) iso14443a-utils.o pn532.o logger.o tagmanualread.cpp -o tagmanualread -lserialport

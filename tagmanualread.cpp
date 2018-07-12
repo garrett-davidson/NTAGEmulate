@@ -120,5 +120,18 @@ int main(int argc, char **argv) {
   printf("BCC: \n");
   device->printHex(bcc, 2);
 
+  printf("Sending SEL_REQ CL2\n");
+  const int selReqCL2Size = 9;
+  uint8_t selReqCL2[selReqCL2Size] = { 0x95, 0x70, uid[3], uid[4], uid[5], uid[6], bcc[1], 0x00, 0x00 };
+  iso14443aCRCAppend(selReqCL2, selReqCL2Size);
+  device->sendRawBytesInitiator(selReqCL2, selReqCL2Size, responseFrame, responseFrameSize);
+
+  if (responseData[0] == 0x00) {
+    printf("Got final SAK!\n");
+  } else {
+    printf("Got unknown result\n");
+    return -1;
+  }
+
   delete device;
 }

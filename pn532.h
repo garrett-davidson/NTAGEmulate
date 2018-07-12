@@ -19,6 +19,8 @@ public:
   int setParameters(uint8_t parameters);
   int initAsTarget(uint8_t mode, const uint8_t *mifareParams, uint8_t responseBuffer[], const size_t responseBufferSize);
   int getInitiatorCommand(uint8_t responseBuffer[], const size_t responseBufferSize);
+
+  uint8_t readRegister(uint16_t registerAddress);
   int writeRegister(uint16_t registerAddress, uint8_t registerValue);
 
   int ntag2xxReadPage(uint8_t page, uint8_t *buffer);
@@ -95,6 +97,9 @@ public:
     RegisterCIU_TxMode = 0x6302,
     RegisterCIU_RxMode = 0x6303,
     RegisterCIU_ManualRCV = 0x630D,
+    RegisterCIU_Error = 0x6336,
+    RegisterCIU_Control = 0x633C,
+    RegisterCIU_BitFraming = 0x633D,
   };
 
 private:

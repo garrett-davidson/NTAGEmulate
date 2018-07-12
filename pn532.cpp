@@ -129,7 +129,6 @@ void PN532::printHex(const uint8_t buffer[], int size) {
 }
 
 void PN532::printFrame(const uint8_t *frame, const size_t frameLength) {
-
   if (frameLength < 4) {
     printf("Incomplete frame\n");
     return;
@@ -547,6 +546,24 @@ int PN532::writeRegister(uint16_t registerAddress, uint8_t registerValue) {
   }
 
   return responseSize;
+}
+
+uint8_t PN532::readRegister(uint16_t registerAddress) {
+  const int commandSize = 3;
+  const uint8_t command[commandSize] = { TxReadRegister, registerAddress >> 8, registerAddress & 0xFF };
+
+  const int responseBufferSize = 100;
+  uint8_t responseBuffer[responseBufferSize];
+
+  int responseSize = sendCommand(command, commandSize, responseBuffer, responseBufferSize, MAX_RESPONSE_TIME);
+
+  if (responseBuffer[RESPONSE_PREFIX_LENGTH] != RxReadRegister) {
+    printf("Error writing register\n");
+    printHex(responseBuffer, responseSize);
+    return -1;
+  }
+
+  return responseBuffer[RESPONSE_PREFIX_LENGTH + 1];
 }
 
 int PN532::ntag2xxEmulate(const uint8_t *uid, const uint8_t *data) {

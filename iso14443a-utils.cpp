@@ -2,7 +2,7 @@
 
 #include <stdio.h>
 
-uint16_t iso14443a_crc(const uint8_t *pbtData, size_t szLen) {
+uint16_t iso14443aCRC(const uint8_t *pbtData, size_t szLen) {
   uint32_t wCrc = 0x6363;
 
   do {
@@ -14,4 +14,10 @@ uint16_t iso14443a_crc(const uint8_t *pbtData, size_t szLen) {
   } while (--szLen);
 
   return (uint16_t)wCrc;
+}
+
+void iso14443aCRCAppend(uint8_t *pbtData, size_t szLen) {
+  uint16_t crc = iso14443aCRC(pbtData, szLen - 2);
+
+  *(uint16_t *)(pbtData + szLen - 2) = crc;
 }

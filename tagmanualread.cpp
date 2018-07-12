@@ -90,7 +90,7 @@ int main(int argc, char **argv) {
   const int selReqCL1Size = 9;
   uint8_t selReqCL1[selReqCL1Size] = { 0x93, 0x70 };
   memcpy(selReqCL1 + 2, responseData, 5);
-  *(uint16_t *)(selReqCL1 + selReqCL1Size - 2) = iso14443a_crc(selReqCL1, selReqCL1Size - 2);
+  iso14443aCRCAppend(selReqCL1, selReqCL1Size);
   device->sendRawBytesInitiator(selReqCL1, selReqCL1Size, responseFrame, responseFrameSize);
 
   if (responseData[0] == 0x04) {

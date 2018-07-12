@@ -75,16 +75,16 @@ int main(int argc, char **argv) {
   device->sendRawBytesInitiator(sddReqCl1, sddReqCl1Size, responseFrame, responseFrameSize);
 
   const uint8_t cascadeTag = 0x88;
-  const int uidSize = 7;
-  uint8_t uid[uidSize];
-  uint8_t bcc[2];
-
   if (responseData[0] == cascadeTag) {
     printf("Found Cascade level 2 tag\n");
   } else {
     printf("Got unknown result\n");
     return -1;
   }
+
+  const int uidSize = 7;
+  uint8_t uid[uidSize] = { responseData[1], responseData[2], responseData[3] };
+  uint8_t bcc[2] = { responseData[4] };
 
   printf("Sending SEL_REQ CL1\n");
   const int selReqCL1Size = 9;
@@ -99,6 +99,26 @@ int main(int argc, char **argv) {
     printf("Got unknown result\n");
     return -1;
   }
+
+  printf("Sending SDD_REQ CL2\n");
+  const int sddReqCL2Size = 2;
+  const uint8_t sddReqCL2[sddReqCL2Size] = { 0x95, 0x20 };
+
+  int responseSize = device->sendRawBytesInitiator(sddReqCL2, sddReqCL2Size, responseFrame, responseFrameSize);
+
+  if (responseSize == 15) {
+    printf("Got the rest of UID\n");
+  } else {
+    printf("Got unknown result\n");
+    return -1;
+  }
+  memcpy(uid + 3, responseData, 4);
+  bcc[1] = responseData[4];
+
+  printf("UID: \n");
+  device->printHex(uid, 7);
+  printf("BCC: \n");
+  device->printHex(bcc, 2);
 
   delete device;
 }

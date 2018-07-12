@@ -790,10 +790,10 @@ int PN532::sendRawBitsInitiator(const uint8_t *bitData, const size_t bitCount, u
   bitFraming |= bitsInLastFrame; // Send bitsInLastFrame bits from last byte
   writeRegister(RegisterCIU_BitFraming, bitFraming);
 
-  return sendRawBytesInitiator(bitData, frameByteCount, responseFrame, responseFrameSize);
+  return sendRawBytesInitiator(bitData, frameByteCount, responseFrame, responseFrameSize, bitsInLastFrame);
 }
 
-int PN532::sendRawBytesInitiator(const uint8_t *byteData, const size_t byteCount, uint8_t *responseFrame, const size_t responseFrameSize) {
+int PN532::sendRawBytesInitiator(const uint8_t *byteData, const size_t byteCount, uint8_t *responseFrame, const size_t responseFrameSize, const uint8_t bitsInLastFrame) {
   // Assume automatic parity
 
   size_t commandSize = byteCount + 1;
@@ -801,6 +801,14 @@ int PN532::sendRawBytesInitiator(const uint8_t *byteData, const size_t byteCount
 
   command[0] = TxInCommunicateThrough;
   memcpy(command + 1, byteData, byteCount);
+
+  uint8_t bitFraming = readRegister(RegisterCIU_BitFraming);
+  if (bitsInLastFrame) {
+    bitFraming |= bitsInLastFrame; // Send bitsInLastFrame bits from last byte
+  } else {
+    bitFraming &= 0b11111000; // Other clear the previous value
+  }
+  writeRegister(RegisterCIU_BitFraming, bitFraming);
 
   return sendCommand(command, commandSize, responseFrame, responseFrameSize, 100);
 }

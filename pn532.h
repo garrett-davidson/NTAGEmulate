@@ -35,7 +35,7 @@ public:
   void printFrame(const uint8_t *frame, const size_t frameLength);
 
   int sendRawBitsInitiator(const uint8_t *bitData, const size_t bitCount, uint8_t *responseFrame, const size_t responseFrameSize);
-  int sendRawBytesInitiator(const uint8_t *byteData, const size_t byteCount, uint8_t *responseFrame, const size_t responseFrameSize);
+  int sendRawBytesInitiator(const uint8_t *byteData, const size_t byteCount, uint8_t *responseFrame, const size_t responseFrameSize, const uint8_t bitsInLastFrame = 0);
 
   enum NFCParameters {
     fNADUsed = 1 << 0, // Use Network ADdress for initiator

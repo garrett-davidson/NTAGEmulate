@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 #ifdef linux
 #define SP_MODE_READ_WRITE (sp_mode)(SP_MODE_READ | SP_MODE_WRITE)
@@ -22,6 +23,10 @@
 #define RESPONSE_PREFIX_LENGTH 6
 
 int PN532::readSerialFrame(uint8_t *buffer, const size_t bufferSize, int timeout) {
+  time_t startTime;
+  time_t now;
+  time(&startTime);
+
   log(LogChannelSerial, "Reading serial frame\n");
 
   size_t expectedSize = 0;
@@ -92,21 +97,23 @@ int PN532::readSerialFrame(uint8_t *buffer, const size_t bufferSize, int timeout
     }
 
     // Read at end of loop in case we received 2 full frames last time
-    size_t lastRead = sp_blocking_read_next(port, serialBuffer + readSize, bufferSize - readSize, timeout);
+    size_t lastRead = sp_nonblocking_read(port, serialBuffer + readSize, bufferSize - readSize);
     readSize += lastRead;
-    if (lastRead <= 0) {
-      if (!lastRead) {
-        log(LogChannelSerial, "Timeout\n");
-        log(LogChannelSerial, "%d %d %d\n", expectedSize, lastRead, readSize);
-        printHex(serialBuffer, readSize);
-      } else {
-        log(LogChannelSerial, "Serial error %d\n", lastRead);
-      }
+    if (lastRead < 0) {
+      log(LogChannelSerial, "Serial error %d\n", lastRead);
       return lastRead;
     }
 
     if (serialBuffer[0] != 0x00) {
       log(LogChannelSerial, "Received unknown start of frame: %X\n", serialBuffer[0]);
+    }
+
+    time(&now);
+    if ((difftime(now, startTime) * 1000) > timeout) {
+      log(LogChannelSerial, "Timeout\n");
+      log(LogChannelSerial, "%d %d %d\n", expectedSize, lastRead, readSize);
+      printHex(serialBuffer, readSize);
+      return lastRead;
     }
   }
 

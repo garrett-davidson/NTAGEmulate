@@ -59,5 +59,17 @@ int main(int argc, char **argv) {
   int responseDataLength = responseFrame[3] - 3;
   printf("Response: ");
   device->printHex(responseData, responseDataLength);
+
+  if (*responseData != 0x44) {
+    printf("Failed REQA\n");
+    return -1;
+  }
+
+  printf("Got ATQA\n");
+
+  const int sddReqCl1Size = 2;
+  const uint8_t sddReqCl1[sddReqCl1Size] = { 0x93, 0x20 };
+  device->sendRawBytesInitiator(sddReqCl1, sddReqCl1Size, responseFrame, responseFrameSize);
+
   delete device;
 }

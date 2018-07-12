@@ -60,6 +60,8 @@ public:
     RxSetParameters = 0x13,
     TxSAMConfiguration = 0x14,
     RxSAMConfiguration = 0x15,
+    TxRFConfiguration = 0x32,
+    RxRFConfiguration = 0x33,
     TxInDataExchange = 0x40,
     RxInDataExchange = 0x41,
     TxInCommunicateThrough = 0x42,

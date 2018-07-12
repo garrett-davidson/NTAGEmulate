@@ -304,36 +304,61 @@ int PN532::wakeUp() {
 
 int PN532::setUp(SetupMode mode) {
   printf("Setting up\n");
+  if (samConfig(SamConfigurationModeNormal) < 0) {
+    printf("Error SAM config\n");
+    return -1;
+  }
 
-  writeRegister(RegisterCIU_BitFraming,
-                0 << 7 | // StartSend
-                0 << 6 | // RxAlign[2:0]
-                0 << 3 | // Reserved
-                0 << 2   // TxLastBits[2:0]
-                );
+  const int responseBufferSize = 50;
+  uint8_t responseBuffer[responseBufferSize];
 
-  uint8_t txMode = readRegister(RegisterCIU_TxMode);
-  txMode |= 1 << 7; // Enable CRC
-  writeRegister(RegisterCIU_TxMode, txMode);
-
-  uint8_t rxMode = readRegister(RegisterCIU_RxMode);
-  rxMode |= 1 << 7; // Enable CRC
-  writeRegister(RegisterCIU_RxMode, rxMode);
-
-  uint8_t manualReceive = readRegister(RegisterCIU_ManualRCV);
-  manualReceive &= 0b11101111; // Enable Parity
-  writeRegister(RegisterCIU_ManualRCV, manualReceive);
+  const int parameterCommandSize = 2;
+  const uint8_t parameterCommand[parameterCommandSize] = {
+    TxSetParameters,
+    fAutomaticRATS | fAutomaticATR_RES,
+  };
+  if (sendCommand(parameterCommand, parameterCommandSize, responseBuffer, responseBufferSize, 100) < 0) {
+    printf("Could not set paramters");
+    return -1;
+  }
 
   switch (mode) {
   case InitiatorMode: {
-    if (samConfig(SamConfigurationModeNormal) < 0) {
-      printf("Error SAM config\n");
+    writeRegister(RegisterCIU_TxMode,
+                  1 << 7 // Enable CRC
+                  );
+    writeRegister(RegisterCIU_RxMode,
+                  1 << 7 // Enable CRC
+                  );
+
+    const int rfConfigFieldCommandSize = 3;
+    const uint8_t rfConfigFieldCommand[rfConfigFieldCommandSize] = {
+      TxRFConfiguration,
+      0x01, // RF Field
+      0 << 1 // Turn off Auto RFCA
+      | 1 << 0 // Turn on RF Field
+      ,
+    };
+
+    if (sendCommand(rfConfigFieldCommand, rfConfigFieldCommandSize, responseBuffer, responseBufferSize, 100) < 0) {
+      printf("Could not configure RF field\n");
       return -1;
     }
 
-    uint8_t control = readRegister(RegisterCIU_Control);
-    control |= 1 << 4; // Initiator
-    writeRegister(RegisterCIU_Control, control);
+    const int rfConfigMaxRetriesCommandSize = 5;
+    const uint8_t rfConfigMaxRetriesCommand[rfConfigMaxRetriesCommandSize] = {
+      TxRFConfiguration,
+      0x05, // Max Retries
+      0xFF, // MxRtyATR max retries for ATR_REQ
+      0xFF, // MxRtyPSL max retries for PSL_REQ
+      0xFF, // MxRtyPassiveActivation max retries in InListPassivetarget
+    };
+
+    if (sendCommand(rfConfigMaxRetriesCommand, rfConfigMaxRetriesCommandSize, responseBuffer, responseBufferSize, 100) < 0) {
+      printf("Could not configure RF field\n");
+      return -1;
+    }
+
     break;
   }
 

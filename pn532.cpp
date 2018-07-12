@@ -282,11 +282,44 @@ int PN532::wakeUp() {
   return 0;
 }
 
-int PN532::setUp() {
+int PN532::setUp(SetupMode mode) {
   printf("Setting up\n");
-  if (samConfig(SamConfigurationModeNormal) < 0) {
-    printf("Error SAM config\n");
-    return -1;
+
+  writeRegister(RegisterCIU_BitFraming,
+                0 << 7 | // StartSend
+                0 << 6 | // RxAlign[2:0]
+                0 << 3 | // Reserved
+                0 << 2   // TxLastBits[2:0]
+                );
+
+  uint8_t txMode = readRegister(RegisterCIU_TxMode);
+  txMode |= 1 << 7; // Enable CRC
+  writeRegister(RegisterCIU_TxMode, txMode);
+
+  uint8_t rxMode = readRegister(RegisterCIU_RxMode);
+  rxMode |= 1 << 7; // Enable CRC
+  writeRegister(RegisterCIU_RxMode, rxMode);
+
+  uint8_t manualReceive = readRegister(RegisterCIU_ManualRCV);
+  manualReceive &= 0b11101111; // Enable Parity
+  writeRegister(RegisterCIU_ManualRCV, manualReceive);
+
+  switch (mode) {
+  case InitiatorMode: {
+    if (samConfig(SamConfigurationModeNormal) < 0) {
+      printf("Error SAM config\n");
+      return -1;
+    }
+
+    uint8_t control = readRegister(RegisterCIU_Control);
+    control |= 1 << 4; // Initiator
+    writeRegister(RegisterCIU_Control, control);
+    break;
+  }
+
+  case TargetMode:
+    printf("*****TODO****");
+    exit(1);
   }
   return 0;
 }

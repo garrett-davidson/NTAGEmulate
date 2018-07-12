@@ -28,7 +28,7 @@ int main(int argc, char **argv) {
   device = new PN532(argv[1]);
 
   if (device->wakeUp() < 0) { return -1; };
-  if (device->setUp() < 0) { return -1; };
+  if (device->setUp(PN532::InitiatorMode) < 0) { return -1; };
 
   signal(SIGINT, signalHandler);
 

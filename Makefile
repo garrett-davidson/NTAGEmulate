@@ -1,4 +1,4 @@
-all: logger tagemulate tagread pn532
+all: logger tagemulate tagread tagmanualread pn532
 
 logger: logger.cpp
 	$(CXX) -c logger.cpp -o logger.o
@@ -11,3 +11,6 @@ tagemulate: tagemulate.cpp pn532 logger
 
 tagread: tagread.cpp pn532 logger
 	$(CXX) pn532.o logger.o tagread.cpp -o tagread -lserialport
+
+tagmanualread: tagmanualread.cpp pn532 logger
+	$(CXX) pn532.o logger.o tagmanualread.cpp -o tagmanualread -lserialport

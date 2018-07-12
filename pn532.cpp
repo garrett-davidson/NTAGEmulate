@@ -755,6 +755,24 @@ int PN532::ntag2xxEmulate(const uint8_t *uid, const uint8_t *data) {
   return 0;
 }
 
+int PN532::sendRawBitsInitiator(const uint8_t *bitData, const size_t bitCount, uint8_t *responseFrame, const size_t responseFrameSize) {
+  // Assume automatic parity
+
+  const uint8_t bitsInLastFrame = bitCount % 8;
+  size_t frameByteCount = (bitCount / 8) + (bitsInLastFrame ? 1 : 0); // szFrameBytes
+  size_t commandSize = frameByteCount + 1;
+  uint8_t command[commandSize + 1];
+
+  command[0] = TxInCommunicateThrough;
+  memcpy(command + 1, bitData, frameByteCount);
+
+  uint8_t bitFraming = readRegister(RegisterCIU_BitFraming);
+  bitFraming |= bitsInLastFrame; // Send bitsInLastFrame bits from last byte
+  writeRegister(RegisterCIU_BitFraming, bitFraming);
+
+  return sendCommand(command, commandSize, responseFrame, responseFrameSize, 100);
+}
+
 void PN532::close() {
   printf("Closing port\n");
   shouldQuit = true;

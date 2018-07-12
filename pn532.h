@@ -34,6 +34,8 @@ public:
   void printHex(const uint8_t buffer[], int size);
   void printFrame(const uint8_t *frame, const size_t frameLength);
 
+  int sendRawBitsInitiator(const uint8_t *bitData, const size_t bitCount, uint8_t *responseFrame, const size_t responseFrameSize);
+
   enum NFCParameters {
     fNADUsed = 1 << 0, // Use Network ADdress for initiator
     fDIDUsed = 1 << 1, // Use Device IDentifier (?) for initiator (or CID for ISO/IEC14443-4 PCD)

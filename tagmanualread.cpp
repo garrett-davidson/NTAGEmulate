@@ -32,5 +32,32 @@ int main(int argc, char **argv) {
   if (device->wakeUp()) return -1;
   if (device->setUp(PN532::InitiatorMode)) return -1;
 
+  uint8_t txMode = device->readRegister(PN532::RegisterCIU_TxMode);
+  txMode &= 0b01111111; // Disable CRC
+  device->writeRegister(PN532::RegisterCIU_TxMode, txMode);
+
+  uint8_t rxMode = device->readRegister(PN532::RegisterCIU_RxMode);
+  rxMode &= 0b01111111; // Disable CRC
+  device->writeRegister(PN532::RegisterCIU_RxMode, rxMode);
+
+  const int responseFrameSize = 300;
+  uint8_t responseFrame[responseFrameSize];
+  const uint8_t reqa = 0x26;
+
+  device->writeRegister(0x6305, 0x40); // AutoRFOff
+  device->writeRegister(0x633C, 0x10); // Initiator
+  device->setParameters(
+                        PN532::fAutomaticATR_RES // Enable auto atr_res
+                        // Disable automatic RATS
+                        );
+
+  printf("Finished setup\n");
+
+  device->sendRawBitsInitiator(&reqa, 7, responseFrame, responseFrameSize);
+
+  uint8_t *responseData = responseFrame + 8;
+  int responseDataLength = responseFrame[3] - 3;
+  printf("Response: ");
+  device->printHex(responseData, responseDataLength);
   delete device;
 }

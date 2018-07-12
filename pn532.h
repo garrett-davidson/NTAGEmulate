@@ -14,7 +14,7 @@ public:
 
   int wakeUp();
   int setUp();
-  int sendCommand(const uint8_t *command, int commandSize, uint8_t *responseBuffer, const size_t responseBufferSize, int timeout = 0);
+  int sendCommand(const uint8_t *command, int commandSize, uint8_t *responseBuffer, const size_t responseBufferSize, int timeout);
   int readTagId(uint8_t *idBuffer, uint8_t idBufferLength, uint8_t tagBaudRate);
   int setParameters(uint8_t parameters);
   int initAsTarget(uint8_t mode, const uint8_t *mifareParams, uint8_t responseBuffer[], const size_t responseBufferSize);

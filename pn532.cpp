@@ -274,7 +274,7 @@ int PN532::wakeUp() {
   const int responseBufferSize = 13;
   uint8_t responseBuffer[responseBufferSize];
   uint8_t command[1] = { TxGetFirmwareVersion };
-  if (sendCommand(command, 1, responseBuffer, responseBufferSize) < 0) {
+  if (sendCommand(command, 1, responseBuffer, responseBufferSize, MAX_RESPONSE_TIME) < 0) {
     printf("Could not get firmware version\n");
     return -1;
   }
@@ -299,7 +299,7 @@ int PN532::setParameters(uint8_t parameters) {
   const int responseBufferSize = 10;
   uint8_t responseBuffer[responseBufferSize];
 
-  if (sendCommand(command, commandSize, responseBuffer, responseBufferSize) < 0) {
+  if (sendCommand(command, commandSize, responseBuffer, responseBufferSize, MAX_RESPONSE_TIME) < 0) {
     printf("Error setting parameters\n");
     return -1;
   }
@@ -518,12 +518,12 @@ int PN532::initAsTarget(uint8_t mode, const uint8_t *mifareParams, uint8_t respo
 
   memcpy(command + 2, mifareParams, 6);
 
-  return sendCommand(command, sizeof(command), responseBuffer, responseBufferSize, 0);
+  return sendCommand(command, sizeof(command), responseBuffer, responseBufferSize, 1000);
 }
 
 int PN532::getInitiatorCommand(uint8_t *responseBuffer, const size_t responseBufferSize) {
   const uint8_t command[] = { 0x88 };
-  return sendCommand(command, 1, responseBuffer, responseBufferSize);
+  return sendCommand(command, 1, responseBuffer, responseBufferSize, 100);
 }
 
 int PN532::writeRegister(uint16_t registerAddress, uint8_t registerValue) {
@@ -537,7 +537,7 @@ int PN532::writeRegister(uint16_t registerAddress, uint8_t registerValue) {
 
   const int responseBufferSize = 100;
   uint8_t responseBuffer[responseBufferSize];
-  int responseSize = sendCommand(command, commandSize, responseBuffer, responseBufferSize);
+  int responseSize = sendCommand(command, commandSize, responseBuffer, responseBufferSize, MAX_RESPONSE_TIME);
 
   if (responseBuffer[RESPONSE_PREFIX_LENGTH] != 0x09) {
     printf("Error writing register\n");
@@ -607,7 +607,10 @@ int PN532::ntag2xxEmulate(const uint8_t *uid, const uint8_t *data) {
   const int responseBufferSize = 300; // Initiator command can be up to 262
   uint8_t responseBuffer[responseBufferSize];
 
-  responseSize = initAsTarget(TargetModePassiveOnly, mifareParams, responseBuffer, responseBufferSize);
+  do {
+    responseSize = initAsTarget(TargetModePassiveOnly, mifareParams, responseBuffer, responseBufferSize);
+    if (shouldQuit) return 0;
+  } while (!responseSize);
 
   printf("Got init:\n");
   printFrame(responseBuffer, responseSize);
@@ -684,7 +687,7 @@ int PN532::ntag2xxEmulate(const uint8_t *uid, const uint8_t *data) {
     }
 
     if (nextCommandSize)
-      responseSize = sendCommand(nextCommand, nextCommandSize, responseBuffer, responseBufferSize);
+      responseSize = sendCommand(nextCommand, nextCommandSize, responseBuffer, responseBufferSize, 100);
 
     if (responseSize < 0) {
       printf("Error sending response\n");

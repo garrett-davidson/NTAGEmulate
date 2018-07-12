@@ -147,7 +147,7 @@ void PN532::printFrame(const uint8_t *frame, const size_t frameLength) {
     return;
   }
 
-  printf("\nFrame:\n");
+  printf("Frame:\n");
   uint8_t dataLength = frame[3] - 1;
 
   printf("Data length: %d\n", dataLength);
@@ -164,6 +164,26 @@ void PN532::printFrame(const uint8_t *frame, const size_t frameLength) {
   printf("FrameType: %X\n", frameType);
 
   switch (frameType) {
+  case TxReadRegister:
+    printf("ReadRegister\n");
+    printf("Register: %X\n", frame[RESPONSE_PREFIX_LENGTH + 1]);
+    break;
+
+  case RxReadRegister:
+    printf("ReadRegister\n");
+    printf("Value: %X\n", frame[RESPONSE_PREFIX_LENGTH +1]);
+    break;
+
+  case TxWriteRegister:
+    printf("WriteRegister\n");
+    printf("Register: %X, value: %X\n", frame[RESPONSE_PREFIX_LENGTH + 1], frame[RESPONSE_PREFIX_LENGTH + 2]);
+    break;
+
+  case RxWriteRegister:
+    printf("WriteRegister\n");
+    printf("Success\n");
+    break;
+
   case TxInDataExchange:
     printf("InDataExchange\n");
     break;
@@ -220,8 +240,6 @@ void PN532::printFrame(const uint8_t *frame, const size_t frameLength) {
     printf("Unknown frame type: %X\n", frameType);
     break;
   }
-
-  printf("\n");
 }
 
 PN532::PN532(const char* portName) {

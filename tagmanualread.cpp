@@ -1,6 +1,8 @@
 #include "pn532.h"
+#include "iso14443a-utils.h"
 
 #include <stdio.h>
+#include <string.h>
 #include <unistd.h>
 
 PN532 *device;
@@ -67,9 +69,36 @@ int main(int argc, char **argv) {
 
   printf("Got ATQA\n");
 
+  printf("Sending SDD_REQ CL1\n");
   const int sddReqCl1Size = 2;
   const uint8_t sddReqCl1[sddReqCl1Size] = { 0x93, 0x20 };
   device->sendRawBytesInitiator(sddReqCl1, sddReqCl1Size, responseFrame, responseFrameSize);
+
+  const uint8_t cascadeTag = 0x88;
+  const int uidSize = 7;
+  uint8_t uid[uidSize];
+  uint8_t bcc[2];
+
+  if (responseData[0] == cascadeTag) {
+    printf("Found Cascade level 2 tag\n");
+  } else {
+    printf("Got unknown result\n");
+    return -1;
+  }
+
+  printf("Sending SEL_REQ CL1\n");
+  const int selReqCL1Size = 9;
+  uint8_t selReqCL1[selReqCL1Size] = { 0x93, 0x70 };
+  memcpy(selReqCL1 + 2, responseData, 5);
+  *(uint16_t *)(selReqCL1 + selReqCL1Size - 2) = iso14443a_crc(selReqCL1, selReqCL1Size - 2);
+  device->sendRawBytesInitiator(selReqCL1, selReqCL1Size, responseFrame, responseFrameSize);
+
+  if (responseData[0] == 0x04) {
+    printf("Got SAK for incomplete UID\n");
+  } else {
+    printf("Got unknown result\n");
+    return -1;
+  }
 
   delete device;
 }

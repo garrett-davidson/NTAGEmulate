@@ -112,7 +112,7 @@ int PN532::readSerialFrame(uint8_t *buffer, const size_t bufferSize, int timeout
     if ((difftime(now, startTime) * 1000) > timeout) {
       log(LogChannelSerial, "Timeout\n");
       log(LogChannelSerial, "%d %d %d\n", expectedSize, lastRead, readSize);
-      printHex(serialBuffer, readSize);
+      printHex(serialBuffer, readSize, LogChannelSerial);
       return readSize;
     }
   }
@@ -121,9 +121,13 @@ int PN532::readSerialFrame(uint8_t *buffer, const size_t bufferSize, int timeout
   return readSize;
 }
 
-void PN532::printHex(const uint8_t buffer[], int size) {
+void PN532::printHex(const uint8_t buffer[], int size, LogChannel logChannel) {
   for (int i = 0; i < size; i++) {
-    printf("%02X ", buffer[i]);
+    if (logChannel) {
+      log(logChannel, "%02X ", buffer[i]);
+    } else {
+      printf("%02X ", buffer[i]);
+    }
   }
   printf("\n");
 }

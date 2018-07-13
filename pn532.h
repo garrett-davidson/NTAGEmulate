@@ -1,3 +1,5 @@
+#include "logger.h"
+
 #include <stdlib.h>
 
 #ifdef linux
@@ -33,7 +35,7 @@ public:
   int ntag2xxReadPage(uint8_t page, uint8_t *buffer);
   int ntag2xxEmulate(const uint8_t *uid, const uint8_t *data);
 
-  void printHex(const uint8_t buffer[], int size);
+  void printHex(const uint8_t buffer[], int size, LogChannel logChannel = (LogChannel)0);
   void printFrame(const uint8_t *frame, const size_t frameLength);
 
   int sendRawBitsInitiator(const uint8_t *bitData, const size_t bitCount, uint8_t *responseFrame, const size_t responseFrameSize);

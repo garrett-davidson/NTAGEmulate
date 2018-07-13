@@ -59,4 +59,15 @@ int main(int argc, char **argv) {
 
   printf("Got ATQA\n");
 
+  printf("Sending SDD_REQ CL1\n");
+  const int sddReqCl1Size = 2;
+  const uint8_t sddReqCl1[sddReqCl1Size] = { 0x93, 0x20 };
+  nfc_initiator_transceive_bytes(device, sddReqCl1, sddReqCl1Size, responseData, responseDataSize, 100);
+
+  const uint8_t cascadeTag = 0x88;
+  if (responseData[0] == cascadeTag) {
+    printf("Found Cascade level 2 tag\n");
+  } else {
+    error("Got unknown result\n");
+  }
 }

@@ -122,4 +122,14 @@ int main(int argc, char **argv) {
     return -1;
   }
 
+  const int readPageSize = 4;
+  uint8_t readPage[readPageSize] = { 0x30, 0x01, 0x00, 0x00 };
+  iso14443a_crc_append(readPage, readPageSize - 2);
+  responseSize = nfc_initiator_transceive_bytes(device, readPage, readPageSize, responseData, responseDataSize, 100);
+
+  if (responseSize == 18) {
+    printf("Read first page\n");
+  } else {
+    error("Could not read page\n");
+  }
 }

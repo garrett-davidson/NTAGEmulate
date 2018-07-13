@@ -1,6 +1,7 @@
 #include "pn532.h"
 #include "iso14443a-utils.h"
 
+#include <signal.h>
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>

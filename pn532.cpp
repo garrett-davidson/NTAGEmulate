@@ -234,8 +234,20 @@ void PN532::printFrame(const uint8_t *frame, const size_t frameLength) {
     printf("TgInitastarget\n");
     break;
 
+  case TxTgGetInitiatorCommand:
+    printf("TgGetInitiatorCommand\n");
+    break;
+
   case RxTgGetInitiatorCommand:
     printf("TgGetInitiatorCommand\n");
+    break;
+
+  case TxTgResponseToInitiator:
+    printf("TgResponseToInitiator\n");
+    break;
+
+  case RxTgResponseToInitiator:
+    printf("TgResponseToInitiator\n");
     break;
 
   default:

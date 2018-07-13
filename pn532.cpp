@@ -111,7 +111,13 @@ int PN532::readSerialFrame(uint8_t *buffer, const size_t bufferSize, int timeout
       log(LogChannelSerial, "Timeout\n");
       log(LogChannelSerial, "%d %d %d\n", expectedSize, lastRead, readSize);
       printHex(serialBuffer, readSize, LogChannelSerial);
-      return readSize;
+
+      // If we timed out, we definitely didn't read part of the next frame
+      // So reset readSize to 0
+      int partialSize = readSize;
+      readSize = 0;
+
+      return partialSize;
     }
   }
 

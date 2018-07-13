@@ -113,7 +113,7 @@ int PN532::readSerialFrame(uint8_t *buffer, const size_t bufferSize, int timeout
       log(LogChannelSerial, "Timeout\n");
       log(LogChannelSerial, "%d %d %d\n", expectedSize, lastRead, readSize);
       printHex(serialBuffer, readSize);
-      return lastRead;
+      return readSize;
     }
   }
 

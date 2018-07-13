@@ -657,30 +657,30 @@ uint8_t PN532::readRegister(uint16_t registerAddress) {
   return responseBuffer[RESPONSE_PREFIX_LENGTH + 1];
 }
 
-int PN532::ntag2xxEmulate(const uint8_t *uid, const uint8_t *data) {
-  // TODO: Investigate what happens with FeliCa emulation
+int PN532::escapeAutoEmulation(uint8_t *responseBuffer, const size_t responseBufferSize) {
+  printf("Attempting to escape auto-emulation\n");
 
-  printf("\nSetting registers\n");
+  printf("- Setting registers\n");
   int responseSize = writeRegister(RegisterCIU_TxMode,
-                1 << 7 // TxCRCEn automatically handle CRC
-                | 0 // TxSpeed 000 = 106 kbit/s
-                | 0 << 3 // InvMod don't invert modulation
-                | 0 << 2 // TxMix don't mix SIGIN with internal coder
-                | 0 // TxFraming 00 = ISO14443A
-                );
+                                   1 << 7 // TxCRCEn automatically handle CRC
+                                   | 0 // TxSpeed 000 = 106 kbit/s
+                                   | 0 << 3 // InvMod don't invert modulation
+                                   | 0 << 2 // TxMix don't mix SIGIN with internal coder
+                                   | 0 // TxFraming 00 = ISO14443A
+                                   );
 
   if (responseSize < 0) {
     printf("Error writing to tx register\n");
     return -1;
   }
 
-    responseSize = writeRegister(RegisterCIU_RxMode,
-                1 << 7 // TxCRCEn automatically handle CRC
-                | 0 // TxSpeed 000 = 106 kbit/s
-                | 1 << 3 // RxNoErr ignore invalid streams
-                | 0 << 2 //  RxMultiple  receive multiple frames at once
-                | 0 // RxFraming 00 = ISO14443A
-                );
+  responseSize = writeRegister(RegisterCIU_RxMode,
+                               1 << 7 // TxCRCEn automatically handle CRC
+                               | 0 // TxSpeed 000 = 106 kbit/s
+                               | 1 << 3 // RxNoErr ignore invalid streams
+                               | 0 << 2 //  RxMultiple  receive multiple frames at once
+                               | 0 // RxFraming 00 = ISO14443A
+                               );
 
 
   if (responseSize < 0) {
@@ -688,40 +688,46 @@ int PN532::ntag2xxEmulate(const uint8_t *uid, const uint8_t *data) {
     return -1;
   }
 
-  printf("\nEmulating tag\n");
+  printf("Emulating escape tag\n");
   const uint8_t mifareParams[] = {
     0x44, 0x00, // SENS_RES read from tag
     0x01, 0x02, 0x03, // First 3 bytes of (fake) UID
     0x00, // SEL_RES read from tag
   };
 
-  const int responseBufferSize = 300; // Initiator command can be up to 262
-  uint8_t responseBuffer[responseBufferSize];
-
-  do {
-    responseSize = initAsTarget(TargetModePassiveOnly, mifareParams, responseBuffer, responseBufferSize);
-    if (shouldQuit) return 0;
-  } while (!responseSize);
+  responseSize = initAsTarget(TargetModePassiveOnly, mifareParams, responseBuffer, responseBufferSize);
 
   printf("Got init:\n");
   printFrame(responseBuffer, responseSize);
 
   printf("Changing settings\n");
-  responseSize = writeRegister(RegisterCIU_RxMode, 0); // Disbable Rx CRC
+  int registerResponseSize = writeRegister(RegisterCIU_RxMode, 0); // Disbable Rx CRC
   if (responseSize < 0) {
     printf("Error writing to rx register\n");
     return -1;
   }
 
-  responseSize = writeRegister(RegisterCIU_TxMode, 0); // Disable Tx CRC
+  registerResponseSize = writeRegister(RegisterCIU_TxMode, 0); // Disable Tx CRC
   if (responseSize < 0) {
     printf("Error writing to rx register\n");
     return -1;
   }
 
-  responseSize = writeRegister(RegisterCIU_ManualRCV, 1 << 3); // Disable Parity
+  registerResponseSize = writeRegister(RegisterCIU_ManualRCV, 1 << 3); // Disable Parity
 
-  printf("Initialized\n");
+  printf("Successfully escaped\n");
+
+  return responseSize;
+}
+
+int PN532::ntag2xxEmulate(const uint8_t *uid, const uint8_t *data) {
+  // TODO: Investigate what happens with FeliCa emulation
+
+  const int responseBufferSize = 300; // Initiator command can be up to 262
+  uint8_t responseBuffer[responseBufferSize];
+
+  int responseSize = escapeAutoEmulation(responseBuffer, responseBufferSize);
+
   while (responseSize > 0) {
     if (shouldQuit) return 0;
 

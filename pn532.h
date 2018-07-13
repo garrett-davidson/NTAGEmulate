@@ -28,6 +28,8 @@ public:
   uint8_t readRegister(uint16_t registerAddress);
   int writeRegister(uint16_t registerAddress, uint8_t registerValue);
 
+  int escapeAutoEmulation(uint8_t *responseBuffer, const size_t responseBufferSize);
+
   int ntag2xxReadPage(uint8_t page, uint8_t *buffer);
   int ntag2xxEmulate(const uint8_t *uid, const uint8_t *data);
 

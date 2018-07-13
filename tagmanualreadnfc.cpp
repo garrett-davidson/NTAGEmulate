@@ -3,6 +3,7 @@
 #include <nfc/nfc.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 
 nfc_context *context;
@@ -69,5 +70,24 @@ int main(int argc, char **argv) {
     printf("Found Cascade level 2 tag\n");
   } else {
     error("Got unknown result\n");
+  }
+
+  const int uidSize = 7;
+  uint8_t uid[uidSize] = { responseData[1], responseData[2], responseData[3] };
+  uint8_t bcc[2] = { responseData[4] };
+
+  printf("Sending SEL_REQ CL1\n");
+  const int selReqCL1Size = 9;
+  uint8_t selReqCL1[selReqCL1Size] = { 0x93, 0x70 };
+  memcpy(selReqCL1 + 2, responseData, 5);
+  iso14443a_crc_append(selReqCL1, selReqCL1Size - 2);
+
+  nfc_initiator_transceive_bytes(device, selReqCL1, selReqCL1Size, responseData, responseDataSize, 100);
+
+  if (responseData[0] == 0x04) {
+    printf("Got SAK for incomplete UID\n");
+  } else {
+    printf("Got unknown result\n");
+    return -1;
   }
 }

@@ -56,12 +56,20 @@ int main(int argc, char **argv) {
 
   printf("Finished setup\n");
 
-  device->sendRawBitsInitiator(&reqa, 7, responseFrame, responseFrameSize);
+  uint8_t *responseData;
 
-  uint8_t *responseData = responseFrame + 8;
-  int responseDataLength = responseFrame[3] - 3;
-  printf("Response: ");
-  device->printHex(responseData, responseDataLength);
+  int status = -1;
+  while (status) {
+    device->sendRawBitsInitiator(&reqa, 7, responseFrame, responseFrameSize);
+
+    responseData = responseFrame + 8;
+    int responseDataLength = responseFrame[3] - 3;
+    printf("Response: ");
+    device->printHex(responseData, responseDataLength);
+    status = responseFrame[7];
+
+    sleep(1);
+  }
 
   if (*responseData != 0x44) {
     printf("Failed REQA\n");

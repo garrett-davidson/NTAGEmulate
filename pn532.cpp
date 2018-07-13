@@ -1,7 +1,5 @@
 #include "pn532.h"
 
-#include "logger.h"
-
 #include <libserialport.h>
 #include <stdio.h>
 #include <stdlib.h>

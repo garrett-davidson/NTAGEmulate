@@ -1,3 +1,5 @@
+#ifndef LOGGER_H
+#define LOGGER_H
 #include <cstdarg>
 
 extern int LogLevel;
@@ -7,3 +9,4 @@ enum LogChannel {
 };
 
 void log(LogChannel channel, const char *format...);
+#endif

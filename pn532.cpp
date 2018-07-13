@@ -695,7 +695,9 @@ int PN532::escapeAutoEmulation(uint8_t *responseBuffer, const size_t responseBuf
     0x00, // SEL_RES read from tag
   };
 
-  responseSize = initAsTarget(TargetModePassiveOnly, mifareParams, responseBuffer, responseBufferSize);
+  do {
+    responseSize = initAsTarget(TargetModePassiveOnly, mifareParams, responseBuffer, responseBufferSize);
+  } while (!responseSize);
 
   printf("Got init:\n");
   printFrame(responseBuffer, responseSize);

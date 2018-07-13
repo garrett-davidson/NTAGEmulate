@@ -17,3 +17,19 @@ void log(LogChannel channel, const char *format...) {
   vprintf(format, args);
   va_end(args);
 }
+
+void printHex(const uint8_t buffer[], int size, LogChannel logChannel) {
+  for (int i = 0; i < size; i++) {
+    if (logChannel) {
+      log(logChannel, "%02X ", buffer[i]);
+    } else {
+      printf("%02X ", buffer[i]);
+    }
+  }
+
+  if (logChannel) {
+    log(logChannel, "\n");
+  } else {
+    printf("\n");
+  }
+}

@@ -90,4 +90,23 @@ int main(int argc, char **argv) {
     printf("Got unknown result\n");
     return -1;
   }
+
+  printf("Sending SDD_REQ CL2\n");
+  const int sddReqCL2Size = 2;
+  const uint8_t sddReqCL2[sddReqCL2Size] = { 0x95, 0x20 };
+  responseSize = nfc_initiator_transceive_bytes(device, sddReqCL2, sddReqCL2Size, responseData, responseDataSize, 100);
+  if (responseSize == 5) {
+    printf("Got the rest of UID\n");
+  } else {
+    error("Got unknown result\n");
+  }
+
+  memcpy(uid + 3, responseData, 4);
+  bcc[1] = responseData[4];
+
+  printf("UID: \n");
+  printHex(uid, 7);
+  printf("BCC: \n");
+  printHex(bcc, 2);
+
 }

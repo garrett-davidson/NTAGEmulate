@@ -17,7 +17,12 @@ void error(const char* errorMessage) {
 
 int main(int argc, char **argv) {
   nfc_init(&context);
-  device = nfc_open(context, NULL);
+
+  const char *connString = NULL;
+  if (argc == 2) {
+    connString = argv[1];
+  }
+  device = nfc_open(context, connString);
 
   if (!device) {
     error("Could not open NFC device\n");

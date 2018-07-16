@@ -25,7 +25,7 @@ int main(int argc, char **argv) {
   nfc_target fakeTarget = {
     .nm = {
       .nmt = NMT_ISO14443A,
-      .nbr = NBR_UNDEFINED,
+      .nbr = NBR_106,
     },
     .nti = {
       .nai = {

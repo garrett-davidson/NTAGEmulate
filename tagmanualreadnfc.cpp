@@ -49,9 +49,30 @@ int main(int argc, char **argv) {
   int responseSize = 0;
   printf("Opened NFC device: %s\n\n", nfc_device_get_name(device));
 
+  nfc_modulation modulation = { .nmt = NMT_ISO14443A, .nbr = NBR_106 };
+  nfc_target target;
+  int targets = 0;
+
+  // Must be done in a loop to detect target
+  while (!targets)
+    targets = nfc_initiator_list_passive_targets(device, modulation, &target, 1);
+  printf("Targets: %d\n", targets);
+  printHex((uint8_t *)&target.nti.nai.abtAtqa, 2);
+  printHex((uint8_t *)&target.nti.nai.abtUid, 4);
+  printHex((uint8_t *)&target.nti.nai.btSak, 1);
+  printHex((uint8_t *)&target.nti.nai.szUidLen, 1);
+  printHex((uint8_t *)&target.nti.nai.szAtsLen, 1);
+  //return 0;
+  responseSize = nfc_initiator_select_passive_target(device, modulation, (uint8_t *)&target.nti.nai.abtUid, target.nti.nai.szUidLen, NULL);
+  const uint8_t readPage1[2] = { 0x30, 0x01 };
+  if ((responseSize = nfc_initiator_transceive_bytes(device, readPage1, 2, responseData, responseDataSize, -1)) < 0) {
+    printf("Could not trigger escape\n");
+    return 0;
+  }
+  printf("Selected %d\n", responseSize);
+
   const uint8_t reqa = 0x26;
   do {
-    sleep(1);
     responseSize = nfc_initiator_transceive_bits(device, &reqa, 7, NULL, responseData, responseDataSize, NULL);
   } while (responseSize == -20);
   responseSize /= 8; // This response size is in bits

@@ -65,6 +65,10 @@ int main(int argc, char **argv) {
   const int sddResCL2Size = 5;
   const uint8_t sddResCL2[sddResCL2Size] = { uid[3], uid[4], uid[5], uid[6], bcc[1] };
 
+  const int sakCL2Size = 3;
+  uint8_t sakCL2[sakCL2Size] = { 0x00 };
+  iso14443a_crc_append(sakCL2, sakCL2Size);
+
   if (nfc_device_set_property_bool(device, NP_EASY_FRAMING, false) < 0) {
     error("Could not disable easy framing\n");
   }
@@ -81,7 +85,9 @@ int main(int argc, char **argv) {
   int transmitSize;
   const uint8_t *transmitBits;
   int receiveSize;
-  while (1) {
+
+  bool selected = false;
+  while (!selected) {
     switch (responseSize) {
     case 7: // REQA
       printf("REQA\n");
@@ -112,10 +118,24 @@ int main(int argc, char **argv) {
       break;
 
     case 72: // SEL_REQ CL1
-      printf("SEL_REQ CL1\n");
-      transmitSize = sakCL1Size * 8;
-      transmitBits = sakCL1;
-      receiveSize = 16;
+      switch (*responseData) {
+      case 0x93:
+        printf("SEL_REQ CL1\n");
+        transmitSize = sakCL1Size * 8;
+        transmitBits = sakCL1;
+        receiveSize = 16;
+        break;
+
+      case 0x95:
+        printf("SEL_REQ CL2\n");
+        transmitSize = sakCL2Size * 8;
+        transmitBits = sakCL2;
+        selected = true;
+        break;
+
+      default:
+        printf("Unexpected value: %X\n", *responseData);
+      }
       break;
 
     case 0:  // No response?
@@ -142,4 +162,6 @@ int main(int argc, char **argv) {
     responseSize = nfc_target_receive_bits(device, responseData, responseDataSize, NULL);
     printf("Read %d\n", responseSize);
   }
+
+  printf("Selected!\n");
 }

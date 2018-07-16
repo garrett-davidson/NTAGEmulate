@@ -1,10 +1,12 @@
 #include "logger.h"
+#include "pn532.h"
 
 #include <nfc/nfc.h>
 #include <unistd.h>
 
 nfc_context *context;
 nfc_device *device;
+PN532 *pnDevice;
 
 void error(const char* errorMessage) {
   printf("%s\n", errorMessage);
@@ -13,8 +15,12 @@ void error(const char* errorMessage) {
   exit(EXIT_FAILURE);
 }
 
+void fetchError() {
+  printf("Register error: %X\n", pnDevice->readRegister(PN532::RegisterCIU_Error));
+}
+
 int main(int argc, char **argv) {
-  nfc_init(&context);
+  pnDevice = new PN532("/dev/tty.usbserial");
 
   nfc_init(&context);
   device = nfc_open(context, NULL);
@@ -138,7 +144,15 @@ int main(int argc, char **argv) {
       }
       break;
 
+    case -20:
+      fetchError();
+      return 0;
+
     case 0:  // No response?
+      transmitSize = 0;
+      break;
+
+    case 23: // Switch turned off RF field?
     case -5: // Buffer overflow?
     case -6: // Timeout
     case NFC_ETGRELEASED: // RF Field gone

@@ -7,7 +7,7 @@ logger: logger.cpp
 	$(CXX) -c logger.cpp -o logger.o
 
 tagemulatenfc: tagemulatenfc.cpp logger
-	$(CXX) tagemulatenfc.cpp -o tagemulatenfc -lnfc
+	$(CXX) logger.o tagemulatenfc.cpp -o tagemulatenfc -lnfc
 
 tagmanualreadnfc: tagmanualreadnfc.cpp logger
 	$(CXX) logger.o tagmanualreadnfc.cpp -o tagmanualreadnfc -lnfc

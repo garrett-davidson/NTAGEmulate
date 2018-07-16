@@ -8,6 +8,7 @@ nfc_device *device;
 
 void error(const char* errorMessage) {
   printf("%s\n", errorMessage);
+  nfc_perror(device, "Error:");
   nfc_exit(context);
   exit(EXIT_FAILURE);
 }
@@ -48,24 +49,68 @@ int main(int argc, char **argv) {
 
   printf("Escaped!\n");
 
+  const uint8_t uid[7] = { 0x04, 0x04, 0xCD, 0x6A, 0xC5, 0x58, 0x81 };
+  const uint8_t bcc[2] = { 0x45, 0x76 };
+
+  const int atqaSize = 2;
+  const uint8_t atqa[atqaSize] = { 0x44, 0x00 };
+
+  const int sddResCL1Size = 5;
+  const uint8_t sddReqCL1[sddResCL1Size] = { 0x88, uid[0], uid[1], uid[2], bcc[0] };
+
+  if (nfc_device_set_property_bool(device, NP_EASY_FRAMING, false) < 0) {
+    error("Could not disable easy framing\n");
+  }
+
   if (nfc_device_set_property_bool(device, NP_HANDLE_CRC, false) < 0) {
-    error("Could not disbale CRC\n");
+    error("Could not disable CRC\n");
   }
 
   if (nfc_device_set_property_bool(device, NP_HANDLE_PARITY, true) < 0) {
     error("Could not enable parity\n");
   }
 
-  do {
-    sleep(1);
-    responseSize = nfc_target_receive_bits(device, responseData, 7, NULL);
-  } while (!responseSize || responseSize == -10);
+  responseSize = nfc_target_receive_bits(device, responseData, 7, NULL);
+  int transmitSize;
+  const uint8_t *transmitBits;
+  int receiveSize;
+  while (1) {
+    switch (responseSize) {
+    case 7: // REQA
+      printf("REQA\n");
+      transmitSize = atqaSize * 8;
+      transmitBits = atqa;
+      receiveSize = 16;
+      break;
 
-  if (responseSize == 7 && responseData[0] == 0x26) {
-    printf("Got REQA\n");
-  } else {
-    error("Got unknown response\n");
+    case 16: // SDD_REQ CL1
+      transmitSize = sddResCL1Size * 8;
+      transmitBits = sddReqCL1;
+      receiveSize = 72;
+      break;
+
+    case 0:  // No response?
+    case -5: // Buffer overflow?
+    case -6: // Timeout
+    case NFC_ETGRELEASED: // RF Field gone
+      break;
+
+    default:
+      printf("Received unknown size response: %d\n", responseSize);
+      if (responseSize > 0) {
+        printHex(responseData, (responseSize / 8) + ((responseSize % 8) ? 1 : 0));
+      }
+      return 0;
+    }
+
+    if (transmitSize) {
+      printf("Sending\n");
+      nfc_target_send_bits(device, transmitBits, transmitSize, NULL);
+    }  else {
+      printf("Not sending\n");
+    }
+
+    responseSize = nfc_target_receive_bits(device, responseData, responseDataSize, NULL);
+    printf("Read %d\n", responseSize);
   }
-
-
 }

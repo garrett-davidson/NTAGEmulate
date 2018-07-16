@@ -32,10 +32,6 @@ int main(int argc, char **argv) {
     error("Could not initialize device\n");
   }
 
-  if (nfc_device_set_property_bool(device, NP_HANDLE_CRC, false) < 0) {
-    error("Could not disable CRC\n");
-  }
-
   if (nfc_device_set_property_bool(device, NP_EASY_FRAMING, false) < 0) {
     error("Could not disable easy framing\n");
   }
@@ -70,6 +66,12 @@ int main(int argc, char **argv) {
     return 0;
   }
   printf("Selected %d\n", responseSize);
+
+  sleep(1);
+
+  if (nfc_device_set_property_bool(device, NP_HANDLE_CRC, false) < 0) {
+    error("Could not disable CRC\n");
+  }
 
   const uint8_t reqa = 0x26;
   do {

@@ -62,6 +62,9 @@ int main(int argc, char **argv) {
   uint8_t sakCL1[sakCL1Size] = { 0x04 };
   iso14443a_crc_append(sakCL1, 1);
 
+  const int sddResCL2Size = 5;
+  const uint8_t sddResCL2[sddResCL2Size] = { uid[3], uid[4], uid[5], uid[6], bcc[1] };
+
   if (nfc_device_set_property_bool(device, NP_EASY_FRAMING, false) < 0) {
     error("Could not disable easy framing\n");
   }
@@ -88,12 +91,28 @@ int main(int argc, char **argv) {
       break;
 
     case 16: // SDD_REQ CL1
-      transmitSize = sddResCL1Size * 8;
-      transmitBits = sddReqCL1;
-      receiveSize = 72;
+      switch (*responseData) {
+      case 0x93:
+        printf("SDD_REQ CL1\n");
+        transmitSize = sddResCL1Size * 8;
+        transmitBits = sddReqCL1;
+        receiveSize = 72;
+        break;
+
+      case 0x95: // SDD_REQ CL2
+        printf("SDD_REQ CL2\n");
+        transmitSize = sddResCL2Size * 8;
+        transmitBits = sddResCL2;
+        receiveSize = 9 * 8;
+        break;
+
+      default:
+        printf("Unexpected value: %X\n", *responseData);
+      }
       break;
 
     case 72: // SEL_REQ CL1
+      printf("SEL_REQ CL1\n");
       transmitSize = sakCL1Size * 8;
       transmitBits = sakCL1;
       receiveSize = 16;

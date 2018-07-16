@@ -58,6 +58,10 @@ int main(int argc, char **argv) {
   const int sddResCL1Size = 5;
   const uint8_t sddReqCL1[sddResCL1Size] = { 0x88, uid[0], uid[1], uid[2], bcc[0] };
 
+  const int sakCL1Size = 3;
+  uint8_t sakCL1[sakCL1Size] = { 0x04 };
+  iso14443a_crc_append(sakCL1, 1);
+
   if (nfc_device_set_property_bool(device, NP_EASY_FRAMING, false) < 0) {
     error("Could not disable easy framing\n");
   }
@@ -87,6 +91,12 @@ int main(int argc, char **argv) {
       transmitSize = sddResCL1Size * 8;
       transmitBits = sddReqCL1;
       receiveSize = 72;
+      break;
+
+    case 72: // SEL_REQ CL1
+      transmitSize = sakCL1Size * 8;
+      transmitBits = sakCL1;
+      receiveSize = 16;
       break;
 
     case 0:  // No response?

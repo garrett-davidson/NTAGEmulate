@@ -107,7 +107,10 @@ void MFRC522::setUp() {
 
 int MFRC522::writeRegister(const Register registerAddress, const uint8_t registerValue) {
   log(LogChannelSPI, "Writing %s: %02X\n", MFRC522RegisterNames[registerAddress], registerValue);
-  const uint8_t transmitBuffer[2] = { (uint8_t)(registerAddress << 1), registerValue };
+  const uint8_t transmitBuffer[2] = {
+    (uint8_t)(registerAddress << 1), // MSB = 0 for write, LSB = 0 always
+    registerValue
+  };
 
   uint8_t receiveBuffer[2];
   int status = spiTransceive(transmitBuffer, receiveBuffer, 2);
@@ -116,7 +119,10 @@ int MFRC522::writeRegister(const Register registerAddress, const uint8_t registe
 }
 
 int MFRC522::readRegister(const Register registerAddress, uint8_t *registerValue) {
-  const uint8_t transmitBuffer[2] = { (uint8_t)((registerAddress << 1) | 0x80), 0 };
+  const uint8_t transmitBuffer[2] = {
+    (uint8_t)((registerAddress << 1) | 0x80), // MSB = 1 for read, LSB = 0 always
+    0
+  };
   uint8_t receiveBuffer[2];
   int status = spiTransceive(transmitBuffer, receiveBuffer, 2);
 

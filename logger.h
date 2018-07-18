@@ -12,6 +12,7 @@ extern int LogLevel;
 
 enum LogChannel {
   LogChannelSerial = 1 << 0,
+  LogChannelSPI = 1 << 1,
 };
 
 void log(LogChannel channel, const char *format...);

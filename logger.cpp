@@ -10,6 +10,9 @@ void log(LogChannel channel, const char *format...) {
   switch (channel) {
   case LogChannelSerial:
     printf("Serial:\t");
+
+  case LogChannelSPI:
+    printf("SPI:\t");
   }
 
   va_list args;

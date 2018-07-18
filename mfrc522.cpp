@@ -67,7 +67,7 @@ MFRC522::MFRC522(const char *busName) {
 }
 
 void MFRC522::reset() {
-  writeRegister(RegisterCommandReg, 0x0F);
+  writeRegister(RegisterCommandReg, CommandSoftReset);
 }
 
 void MFRC522::setUp() {

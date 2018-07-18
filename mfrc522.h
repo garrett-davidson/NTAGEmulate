@@ -68,6 +68,19 @@ class MFRC522 {
     RegisterTestADCReg = 0x3B,
   };
 
+  enum Command {
+    CommandIdle = 0b0000,
+    CommandMem = 0b0001,              /* Store 25 bytes in internal buffer */
+    CommandGenerateRandomID = 0b0010, /* Generate 10-byte random id number */
+    CommandCalcCRC = 0b0011,           /* Active CRC coprocessor and self-test */
+    CommandTransmit = 0b0100,          /* Transmits from FIFO */
+    CommandNoCmdChange = 0b0111,      /* Modify CommandReg without updating command (e.g. PowerDown) */
+    CommandReceive = 0b1000,          /* Activate receiver */
+    CommandTransceive = 0b1100,       /* Transmit then automatically receive */
+    CommandMFAuthent = 0b1110,        /* Perform MIFARE auth as reader */
+    CommandSoftReset = 0b1111,        /* Reset MFRC522 */
+  };
+
   MFRC522(const char* busName);
   void reset();
   int transceive(const uint8_t *inData, uint8_t *outData, const size_t length);

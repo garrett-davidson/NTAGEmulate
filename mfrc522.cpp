@@ -10,17 +10,6 @@
 #include <sys/param.h>
 #include <unistd.h>
 
-int main(int argc, char** argv) {
-  MFRC522 *device = new MFRC522("/dev/spidev0.0");
-
-  device->writeRegister(MFRC522::RegisterCommandReg, 0x0F);
-  device->writeRegister(MFRC522::RegisterTModeReg, 0x8D);
-
-  uint8_t val;
-  device->readRegister(MFRC522::RegisterTModeReg, &val);
-  printf("Read: %02X\n", val);
-}
-
 MFRC522::MFRC522(const char *busName) {
   if ((fd = open(busName, O_RDWR)) < 0) {
     printf("Failed to open the SPI bus.\n");

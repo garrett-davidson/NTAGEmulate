@@ -1,4 +1,4 @@
-all: logger pn532 tagemulatenfc tagmanualreadnfc mfrc522
+all: logger pn532 tagemulatenfc tagmanualreadnfc mfrc522 tagemulatemfrc522
 
 iso14443a-utils: iso14443a-utils.cpp
 	$(CXX) -c iso14443a-utils.cpp -o iso14443a-utils.o
@@ -16,4 +16,7 @@ tagmanualreadnfc: tagmanualreadnfc.cpp logger
 	$(CXX) logger.o tagmanualreadnfc.cpp -o tagmanualreadnfc -lnfc
 
 mfrc522: mfrc522.cpp logger
-	$(CXX) logger.o mfrc522.cpp -o mfrc522
+	$(CXX) -c mfrc522.cpp -o mfrc522.o
+
+tagemulatemfrc522: tagemulatemfrc522.cpp mfrc522 logger
+	$(CXX) mfrc522.o logger.o tagemulatemfrc522.cpp -o tagemulatemfrc522

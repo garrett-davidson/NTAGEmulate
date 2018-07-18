@@ -110,7 +110,7 @@ int MFRC522::writeRegister(const Register registerAddress, const uint8_t registe
   const uint8_t transmitBuffer[2] = { (uint8_t)(registerAddress << 1), registerValue };
 
   uint8_t receiveBuffer[2];
-  int status = transceive(transmitBuffer, receiveBuffer, 2);
+  int status = spiTransceive(transmitBuffer, receiveBuffer, 2);
 
   return status;
 }
@@ -118,7 +118,7 @@ int MFRC522::writeRegister(const Register registerAddress, const uint8_t registe
 int MFRC522::readRegister(const Register registerAddress, uint8_t *registerValue) {
   const uint8_t transmitBuffer[2] = { (uint8_t)((registerAddress << 1) | 0x80), 0 };
   uint8_t receiveBuffer[2];
-  int status = transceive(transmitBuffer, receiveBuffer, 2);
+  int status = spiTransceive(transmitBuffer, receiveBuffer, 2);
 
   *registerValue = receiveBuffer[1];
 
@@ -127,7 +127,7 @@ int MFRC522::readRegister(const Register registerAddress, uint8_t *registerValue
   return status;
 }
 
-int MFRC522::transceive(const uint8_t *inData, uint8_t *outData, const size_t length) {
+int MFRC522::spiTransceive(const uint8_t *inData, uint8_t *outData, const size_t length) {
 
   const int bufferSize = sizeof(__u64); // sizeof(spi_ioc_transfer.tx_buf)
   uint8_t txBuffer[bufferSize];

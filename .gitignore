@@ -1,3 +1,4 @@
 logger.o
 tagemulatenfc
 tagmanualreadnfc
+mfrc522

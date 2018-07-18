@@ -69,6 +69,7 @@ class MFRC522 {
   };
 
   MFRC522(const char* busName);
+  void reset();
   int transceive(const uint8_t *inData, uint8_t *outData, const size_t length);
   int readRegister(const Register registerAddress, uint8_t *registerValue);
   int writeRegister(const Register registerAddress, const uint8_t registerValue);

@@ -64,6 +64,12 @@ MFRC522::MFRC522(const char *busName) {
   spiBuffer.delay_usecs = 0;
   spiBuffer.speed_hz = speed;
   spiBuffer.bits_per_word = 8;
+
+  reset();
+}
+
+void MFRC522::reset() {
+  writeRegister(RegisterCommandReg, 0x0F);
 }
 
 int MFRC522::writeRegister(const Register registerAddress, const uint8_t registerValue) {

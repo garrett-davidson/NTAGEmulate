@@ -1,6 +1,7 @@
 #include "logger.h"
 #include "pn532.h"
 
+#include <string.h>
 #include <nfc/nfc.h>
 #include <unistd.h>
 
@@ -11,7 +12,8 @@ PN532 *pnDevice;
 void error(const char* errorMessage) {
   printf("%s\n", errorMessage);
   nfc_perror(device, "Error:");
-  nfc_exit(context);
+  //nfc_close(device);
+  //nfc_exit(context);
   exit(EXIT_FAILURE);
 }
 
@@ -20,7 +22,7 @@ void fetchError() {
 }
 
 int main(int argc, char **argv) {
-  pnDevice = new PN532("/dev/tty.usbserial");
+  pnDevice = new PN532("/dev/ttyAMA0");
 
   nfc_init(&context);
   device = nfc_open(context, NULL);
@@ -29,6 +31,7 @@ int main(int argc, char **argv) {
     error("Could not open NFC device\n");
   }
 
+  /*
   nfc_target fakeTarget = {
     .nm = {
       .nmt = NMT_ISO14443A,
@@ -44,12 +47,32 @@ int main(int argc, char **argv) {
       },
     },
   };
+  */
 
-  const int responseDataSize = 300;
+  //nfc_device_set_property_bool(device, NP_ACTIVATE_FIELD, false);
+  nfc_device_set_property_bool(device, NP_HANDLE_PARITY, true);
+  nfc_device_set_property_bool(device, NP_HANDLE_CRC, false);
+
+  nfc_target fakeTarget;
+  memset(&fakeTarget, 0, sizeof(fakeTarget));
+  fakeTarget.nm.nmt = NMT_ISO14443A;
+  fakeTarget.nm.nbr = NBR_106;
+  fakeTarget.nti.nai.abtAtqa[0] = 0x00;
+  fakeTarget.nti.nai.abtAtqa[1] = 0x04;
+  fakeTarget.nti.nai.abtUid[0] = 0x08;
+  fakeTarget.nti.nai.abtUid[1] = 0xad;
+  fakeTarget.nti.nai.abtUid[2] = 0xbe;
+  fakeTarget.nti.nai.abtUid[3] = 0xef;
+  fakeTarget.nti.nai.btSak = 0x00;
+  fakeTarget.nti.nai.szUidLen = 4;
+  fakeTarget.nti.nai.szAtsLen = 0;
+
+  const int responseDataSize = 500;
   uint8_t responseData[responseDataSize];
   int responseSize = 0;
 
-  if (nfc_target_init(device, &fakeTarget, responseData, responseDataSize, 0) < 0) {
+  if ((responseSize = nfc_target_init(device, &fakeTarget, responseData, responseDataSize, 10000)) < 0) {
+    printf("%d\n", responseSize);
     error("Could not escape emulation\n");
   }
 
@@ -88,9 +111,9 @@ int main(int argc, char **argv) {
   }
 
   responseSize = nfc_target_receive_bits(device, responseData, 7, NULL);
-  int transmitSize;
+  int transmitSize = 0;
   const uint8_t *transmitBits;
-  int receiveSize;
+  int receiveSize = 0;
 
   bool selected = false;
   while (!selected) {
@@ -145,8 +168,9 @@ int main(int argc, char **argv) {
       break;
 
     case -20:
-      fetchError();
-      return 0;
+      //fetchError();
+      //return 0;
+      break;
 
     case 0:  // No response?
       transmitSize = 0;

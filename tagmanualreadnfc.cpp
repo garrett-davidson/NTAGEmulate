@@ -61,7 +61,7 @@ int main(int argc, char **argv) {
   //return 0;
   responseSize = nfc_initiator_select_passive_target(device, modulation, (uint8_t *)&target.nti.nai.abtUid, target.nti.nai.szUidLen, NULL);
   const uint8_t readPage1[2] = { 0x30, 0x01 };
-  if ((responseSize = nfc_initiator_transceive_bytes(device, readPage1, 2, responseData, responseDataSize, -1)) < 0) {
+  if ((responseSize = nfc_initiator_transceive_bytes(device, readPage1, 2, responseData, responseDataSize, -1) || responseSize == -20) < 0) {
     printf("Could not trigger escape\n");
     return 0;
   }

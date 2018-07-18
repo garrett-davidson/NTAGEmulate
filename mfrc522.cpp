@@ -78,7 +78,7 @@ MFRC522::MFRC522(const char *busName) {
 }
 
 int MFRC522::writeRegister(const Register registerAddress, const uint8_t registerValue) {
-  printf("Writing %s: %02X\n", MFRC522RegisterNames[registerAddress], registerValue);
+  log(LogChannelSPI, "Writing %s: %02X\n", MFRC522RegisterNames[registerAddress], registerValue);
   const uint8_t transmitBuffer[2] = { (uint8_t)(registerAddress << 1), registerValue };
 
   uint8_t receiveBuffer[2];
@@ -94,7 +94,7 @@ int MFRC522::readRegister(const Register registerAddress, uint8_t *registerValue
 
   *registerValue = receiveBuffer[1];
 
-  printf("Read %s: %02X\n", MFRC522RegisterNames[registerAddress], receiveBuffer[1]);
+  log(LogChannelSPI, "Read %s: %02X\n", MFRC522RegisterNames[registerAddress], receiveBuffer[1]);
 
   return status;
 }

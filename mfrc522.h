@@ -81,6 +81,18 @@ class MFRC522 {
     CommandSoftReset = 0b1111,        /* Reset MFRC522 */
   };
 
+  // ComIrqReg interrupt requests
+  enum ComIrq {
+    ComIrqSet1 = 1 << 7,
+    ComIrqTxIrq = 1 << 6,       /* Set after last bit transmitted */
+    ComIrqRxIrq = 1 << 5,       /* Set after end of valid receive stream */
+    ComIrqIdleIrq = 1 << 4,     /* Unexpectedly set to idle */
+    ComIrqHiAltertIrq = 1 << 3,       /* FIFO is getting full */
+    ComIrqLoAltertIrq = 1 << 2,       /* FIFO is getting empty */
+    ComIrqErrIrq = 1 << 1,            /* Error happened (check ErrorReg) */
+    ComIrqTimerIrq = 1 << 0,          /* TCounterValReg hit 0 */
+  };
+
   MFRC522(const char* busName);
   void reset();
   void setUp();

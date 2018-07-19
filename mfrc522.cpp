@@ -2,6 +2,7 @@
 
 #include "logger.h"
 
+#include <bcm2835.h>
 #include <fcntl.h>
 #include <sys/ioctl.h>
 #include <stdio.h>
@@ -10,60 +11,37 @@
 #include <sys/param.h>
 #include <unistd.h>
 
+#define BCM_RESET_PIN 25
+
+bool MFRC522::bcmInit() {
+  if (!bcm2835_init()) {
+    printf("Could not init bcm\n");
+    return false;
+  }
+
+  bcm2835_gpio_fsel(BCM_RESET_PIN, BCM2835_GPIO_FSEL_OUTP);
+  bcm2835_gpio_write(BCM_RESET_PIN, LOW);
+  return true;
+}
+
+bool MFRC522::spiSetup() {
+  bcm2835_spi_begin();
+  bcm2835_spi_setBitOrder(BCM2835_SPI_BIT_ORDER_MSBFIRST);      // The default
+  bcm2835_spi_setDataMode(BCM2835_SPI_MODE0);                   // The default
+  bcm2835_spi_setClockDivider(BCM2835_SPI_CLOCK_DIVIDER_64);    // ~ 4 MHz
+  bcm2835_spi_chipSelect(BCM2835_SPI_CS0);                      // The default
+  bcm2835_spi_setChipSelectPolarity(BCM2835_SPI_CS0, LOW);      // the default
+  return true;
+}
+
 MFRC522::MFRC522(const char *busName) {
-  if ((fd = open(busName, O_RDWR)) < 0) {
-    printf("Failed to open the SPI bus.\n");
-    perror("SPI:");
-    exit(-1);
-  }
-  int mode = SPI_MODE_0, speed = 500000, lsb = 0, bits = 8;
-
-  if (ioctl(fd, SPI_IOC_WR_MODE, &mode) < 0) {
-    perror("SPI wr_mode");
-    return;
+  if (!bcmInit() || !spiSetup()) {
+    printf("Could not set up SPI\n");
+    printf("Try sudo\n");
+    exit(1);
   }
 
-  if (ioctl(fd, SPI_IOC_RD_MODE, &mode) < 0) {
-    perror("SPI rd_mode");
-    return;
-  }
-
-  if (ioctl(fd, SPI_IOC_WR_LSB_FIRST, &lsb) < 0) {
-    perror("SPI wr_lsb_fist");
-    return;
-  }
-
-  if (ioctl(fd, SPI_IOC_RD_LSB_FIRST, &lsb) < 0) {
-    perror("SPI rd_lsb_fist");
-    return;
-  }
-
-  if (ioctl(fd, SPI_IOC_WR_BITS_PER_WORD, &bits) < 0) {
-    perror("SPI wr_bits_per_word");
-    return;
-  }
-
-  if (ioctl(fd, SPI_IOC_RD_BITS_PER_WORD, &bits) < 0) {
-    perror("SPI rd_bits_per_word");
-    return;
-  }
-
-  if (ioctl(fd, SPI_IOC_WR_MAX_SPEED_HZ, &speed) < 0) {
-    perror("SPI wr_max_speed_hz");
-    return;
-  }
-
-  if (ioctl(fd, SPI_IOC_RD_MAX_SPEED_HZ, &speed) < 0) {
-    perror("SPI rd_max_speed_hz");
-    return;
-  }
-
-  printf("%s: spi mode %d, %d bits %sper word, %d Hz max\n", busName, mode, bits, lsb ? "" : "(msb first) ", speed);
-
-  spiBuffer.cs_change = 0;
-  spiBuffer.delay_usecs = 0;
-  spiBuffer.speed_hz = speed;
-  spiBuffer.bits_per_word = 8;
+  printf("Opened device\n");
 }
 
 void MFRC522::reset() {
@@ -71,85 +49,57 @@ void MFRC522::reset() {
 }
 
 void MFRC522::setUp() {
-  reset();
+  if (bcm2835_gpio_lev(BCM_RESET_PIN) == LOW) {
+    printf("Powering up chip\n");
+    bcm2835_gpio_write(BCM_RESET_PIN, HIGH);
+    usleep(50000); // wait 50ms for chip to power up
+  } else {
+    reset();
+  }
 
-  writeRegister(MFRC522::RegisterTModeReg, 0x8D); // Do I need this?
-  writeRegister(MFRC522::RegisterTPrescalerReg, 0x3E); // Or this?
-  writeRegister(MFRC522::RegisterTReloadRegL, 30);     // Or this?
-  writeRegister(MFRC522::RegisterTReloadRegH, 0);      // Or this?
+  // Set up timer
+  writeRegister(MFRC522::RegisterTModeReg, 0x80);
+  writeRegister(MFRC522::RegisterTPrescalerReg, 0xA9);
+  writeRegister(MFRC522::RegisterTReloadRegL, 0x03);
+  writeRegister(MFRC522::RegisterTReloadRegH, 0xE8);
 
   writeRegister(MFRC522::RegisterTxASKReg, 0x40); // Force 100% ASK
-  writeRegister(MFRC522::RegisterModeReg,
-                        0 << 7 | // MSBFirst in CRC calculation
-                        0 << 6 | // Reserved
-                        1 << 5 | // TxWaitRF "transmitter can only be started if an RF field is generated"
-                        0 << 4 | // Reserved
-                        1 << 3 | // PolMFin set polarity of pin MFIN
-                        0 << 2 | // Reserved
-                        1 << 0   // CRCPreset[1:0] (01 = 0x6363)
-                        );
+  writeRegister(MFRC522::RegisterModeReg, 0x3D);
 
-  writeRegister(MFRC522::RegisterTxModeReg,
-                        0 << 7 | // TxCRCEn
-                        0 << 4 | // TxSpeed[2:0] (000 = 106kBd)
-                        0 << 3   // InvMode
-                        // Reserved
-                        );
-
-  writeRegister(MFRC522::RegisterRxModeReg,
-                        0 << 7 | // RxCRCEn
-                        0 << 4 | // RxSpeed[2:0] (000 = 106kBd)
-                        1 << 3 | // RxNoErr
-                        0 << 2   // RxMultiple
-                        // Reserved
-                        );
+  uint8_t temp = readRegister(RegisterTxControlReg);
+  if (!(temp & 0x03))
+    setBitMask(RegisterTxControlReg, 0x03);
+  printf("Finished setup\n");
 }
 
-int MFRC522::writeRegister(const Register registerAddress, const uint8_t registerValue) {
+void MFRC522::writeRegister(const Register registerAddress, const uint8_t registerValue) {
   log(LogChannelSPI, "Writing %s: %02X\n", MFRC522RegisterNames[registerAddress], registerValue);
-  const uint8_t transmitBuffer[2] = {
+  uint8_t transmitBuffer[2] = {
     (uint8_t)(registerAddress << 1), // MSB = 0 for write, LSB = 0 always
     registerValue
   };
 
   uint8_t receiveBuffer[2];
-  int status = spiTransceive(transmitBuffer, receiveBuffer, 2);
-
-  return status;
+  bcm2835_spi_transfernb((char*)transmitBuffer, (char*)receiveBuffer, 2);
 }
 
-int MFRC522::readRegister(const Register registerAddress, uint8_t *registerValue) {
-  const uint8_t transmitBuffer[2] = {
+uint8_t MFRC522::readRegister(const Register registerAddress) {
+  uint8_t transmitBuffer[2] = {
     (uint8_t)((registerAddress << 1) | 0x80), // MSB = 1 for read, LSB = 0 always
     0
   };
   uint8_t receiveBuffer[2];
-  int status = spiTransceive(transmitBuffer, receiveBuffer, 2);
-
-  *registerValue = receiveBuffer[1];
+  bcm2835_spi_transfernb((char*)transmitBuffer, (char*)receiveBuffer, 2);
 
   log(LogChannelSPI, "Read %s: %02X\n", MFRC522RegisterNames[registerAddress], receiveBuffer[1]);
 
-  return status;
+  return receiveBuffer[1];
 }
 
-int MFRC522::spiTransceive(const uint8_t *inData, uint8_t *outData, const size_t length) {
 
-  const int bufferSize = sizeof(__u64); // sizeof(spi_ioc_transfer.tx_buf)
-  uint8_t txBuffer[bufferSize];
-  uint8_t rxBuffer[bufferSize];
-  memset(txBuffer, 0, bufferSize);
-  memset(rxBuffer, 0, bufferSize);
 
-  memcpy(txBuffer, inData, length);
 
-  spiBuffer.len = length;
-  spiBuffer.tx_buf = (unsigned long)txBuffer;
-  spiBuffer.rx_buf = (unsigned long)rxBuffer;
 
-  int status = ioctl(fd, SPI_IOC_MESSAGE(1), &spiBuffer);
 
-  memcpy(outData, rxBuffer, length);
 
-  return status;
 }

@@ -84,13 +84,14 @@ class MFRC522 {
   MFRC522(const char* busName);
   void reset();
   void setUp();
-  int readRegister(const Register registerAddress, uint8_t *registerValue);
-  int writeRegister(const Register registerAddress, const uint8_t registerValue);
+  uint8_t readRegister(const Register registerAddress);
+  void writeRegister(const Register registerAddress, const uint8_t registerValue);
 
  private:
   int fd;
+  bool bcmInit();
+  bool spiSetup();
   struct spi_ioc_transfer spiBuffer;
-  int spiTransceive(const uint8_t *inData, uint8_t *outData, const size_t length);
 };
 
 static const char *MFRC522RegisterNames[] = {

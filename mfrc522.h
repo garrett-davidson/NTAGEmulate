@@ -86,6 +86,8 @@ class MFRC522 {
   void setUp();
   uint8_t readRegister(const Register registerAddress);
   void writeRegister(const Register registerAddress, const uint8_t registerValue);
+  void clearBitMask(Register registerAddress, uint8_t mask);
+  void setBitMask(Register registerAddress, uint8_t mask);
 
  private:
   int fd;

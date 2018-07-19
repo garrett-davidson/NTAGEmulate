@@ -101,6 +101,17 @@ uint8_t MFRC522::readRegister(const Register registerAddress) {
   return receiveBuffer[1];
 }
 
+void MFRC522::clearBitMask(Register registerAddress, uint8_t mask) {
+  uint8_t x = readRegister(registerAddress);
+  x &= ~mask;
+  writeRegister(registerAddress, x);
+}
+
+void MFRC522::setBitMask(Register registerAddress, uint8_t mask) {
+  uint8_t x = readRegister(registerAddress);
+  x |= mask;
+  writeRegister(registerAddress, x);
+}
 
 
 

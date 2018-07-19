@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include <stddef.h>
 
+#define BITS_TO_BYTES(x) ((x/8) + ((x % 8) ? 1 : 0))
 
 class MFRC522 {
  public:
@@ -98,6 +99,8 @@ class MFRC522 {
   void setUp();
   uint8_t readRegister(const Register registerAddress);
   void writeRegister(const Register registerAddress, const uint8_t registerValue);
+  int transceiveBits(const uint8_t *transmitData, const size_t transmitSizeBits, uint8_t *receiveData, const size_t receiveSizeBits, const size_t timeout);
+
   void clearBitMask(Register registerAddress, uint8_t mask);
   void setBitMask(Register registerAddress, uint8_t mask);
 

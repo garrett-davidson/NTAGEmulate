@@ -113,9 +113,79 @@ void MFRC522::setBitMask(Register registerAddress, uint8_t mask) {
   writeRegister(registerAddress, x);
 }
 
+int MFRC522::transceiveBits(const uint8_t *transmitData, const size_t transmitSizeBits, uint8_t *receiveData, const size_t receiveBufferSizeBits, const size_t timeout) {
+  uint8_t txBitsInLastFrame = transmitSizeBits % 8;;
+  clearBitMask(RegisterCollReg, 0x80);
 
+  uint8_t waitIrq = ComIrqRxIrq | ComIrqIdleIrq;       // Received valid data and idled
+  uint8_t bitFraming = txBitsInLastFrame;
 
+  writeRegister(RegisterCommandReg, CommandIdle); // Cancel current comand
+  writeRegister(RegisterCommIrqReg, 0x7F);        // Clear current interrupts
+  setBitMask(RegisterFIFOLevelReg, 0x80);         // Flush FIFO
 
+  uint8_t command = 0x00;
+  if (transmitSizeBits) {
+    command |= CommandTransmit;
 
+    const size_t transmitSizeBytes = BITS_TO_BYTES(transmitSizeBits);
+    for (size_t i = 0; i < transmitSizeBytes; i++)
+      writeRegister(RegisterFIFODataReg, transmitData[i]); // Write transmitData to FIFO
 
+    writeRegister(RegisterBitFramingReg, bitFraming); // Send correct number of bits from last frame
+  }
+
+  if (receiveBufferSizeBits)
+    command |= CommandReceive;
+
+  writeRegister(RegisterCommandReg, command); // Start command
+
+  if (command & CommandTransmit)
+    setBitMask(RegisterBitFramingReg, 0x80); // If we're sending, trigger send
+
+  unsigned int hardTimeout = 2000; // In case all else fails
+  uint8_t irq;
+  while (1) {
+    irq = readRegister(RegisterCommIrqReg);
+    if (irq & waitIrq)
+      break;
+
+    if (irq & ComIrqTimerIrq) {           // Timeout
+      printf("Timeout\n");
+      return -1;
+    }
+
+    if (--hardTimeout == 0) {
+      printf("Hard timeout\n");
+      return -1;
+    }
+  }
+
+  uint8_t errorRegValue = readRegister(RegisterErrorReg);
+  if (errorRegValue & 0x13) {   // Check for buffer overflow, parity error, or protocol error
+    printf("Strange error: %02X\n", errorRegValue);
+    return -1;
+  }
+
+  if (!receiveBufferSizeBits) { // If we're not receiving, we're done
+    return 0;
+  }
+
+  uint8_t receiveBufferSizeBytes = BITS_TO_BYTES(receiveBufferSizeBits);
+  uint8_t receivedBytes = readRegister(RegisterFIFOLevelReg);
+  printf("Received %d bytes\n", receivedBytes);
+  if (receivedBytes > receiveBufferSizeBytes) {
+    printf("Can only fit %d bytes\n", receiveBufferSizeBytes);
+    receivedBytes = receiveBufferSizeBytes;
+  }
+
+  for (int i = 0; i < receivedBytes; i++) {
+    receiveData[i] = readRegister(RegisterFIFODataReg);
+  }
+
+  uint8_t rxBitsInLastFrame = readRegister(RegisterControlReg) & 0x07;
+  printHex(receiveData, receivedBytes);
+
+  // If the last frame was less than 8 bits, subtract the excess
+  return (receivedBytes * 8) - (rxBitsInLastFrame ? (8 - rxBitsInLastFrame) : 0);
 }

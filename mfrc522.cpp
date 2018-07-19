@@ -45,7 +45,12 @@ MFRC522::MFRC522(const char *busName) {
 }
 
 void MFRC522::reset() {
+  printf("Reseting\n");
   writeRegister(RegisterCommandReg, CommandSoftReset);
+  uint8_t x;
+  do {
+    x = readRegister(RegisterCommandReg);
+  } while (x & (1 << 4));
 }
 
 void MFRC522::setUp() {

@@ -19,8 +19,20 @@ enum Registers {
   RegisterCIU_Status2 = 0x6338,
   RegisterCIU_FIFOData = 0x6339,
   RegisterCIU_FIFOLevel = 0x633A,
+  RegisterCIU_WaterLevel = 0x633B,
   RegisterCIU_Control = 0x633C,
   RegisterCIU_BitFraming = 0x633D,
+};
+
+enum Interrupts {
+  InterruptReset = 1 << 7,
+  InterruptTxIrq = 1 << 6,
+  InterruptRxIrq = 1 << 5,
+  InterruptIdleIrq = 1 << 4,
+  InterruptHiAlertIrq = 1 << 3,
+  InterruptLoAlertIrq = 1 << 2,
+  InterruptErrIrq = 1 << 1,
+  InterruptTimerIrq = 1 << 0,
 };
 
 extern bool shouldQuit;
@@ -82,18 +94,17 @@ inline uint8_t readRegister(uint16_t registerAddress) {
   return responseFrame[7];
 }
 
-inline uint8_t awaitReceive() {
-  const uint8_t interrupts =
-  1 << 5                        // RxIEn
-  // | 1 << 1                      // ErrIEn
-  ;
-
+inline uint8_t awaitInterrupts(uint8_t interrupts) {
   uint8_t irq = 0;
   while (!(irq & interrupts) && !shouldQuit) {
     irq = readRegister(RegisterCIU_CommIrq);
   }
 
   return irq;
+}
+
+inline uint8_t awaitReceive() {
+  return awaitInterrupts(1 << 5); // RxIEn
 }
 
 inline void dumpFIFO() {

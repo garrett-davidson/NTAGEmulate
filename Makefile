@@ -1,4 +1,4 @@
-all: iso14443a-utils logger tagemulate tagread tagmanualread pn532 poll pn532speed
+all: iso14443a-utils logger tagemulate tagread tagmanualread pn532 poll pn532speed listenpassive
 
 iso14443a-utils: iso14443a-utils.cpp
 	$(CXX) -c iso14443a-utils.cpp -o iso14443a-utils.o
@@ -23,3 +23,6 @@ poll: poll.cpp
 
 pn532speed: pn532speed.cpp
 	$(CXX) -c pn532speed.cpp -o pn532speed.o
+
+listenpassive: listenpassive.cpp pn532speed
+	$(CXX) pn532speed.o listenpassive.cpp -o listenpassive

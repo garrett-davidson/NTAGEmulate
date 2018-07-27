@@ -6,3 +6,4 @@ iso14443a-utils.o
 tagmanualread
 poll
 pn532speed.o
+listenpassive

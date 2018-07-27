@@ -4,3 +4,4 @@ tagread
 logger.o
 iso14443a-utils.o
 tagmanualread
+poll

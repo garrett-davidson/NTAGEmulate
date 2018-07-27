@@ -103,3 +103,5 @@ inline void dumpFIFO() {
 inline void clearInterrupts() {
   writeRegister(RegisterCIU_CommIrq, 0x7F);
 }
+
+void printFullFIFO();

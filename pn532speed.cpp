@@ -167,3 +167,17 @@ int samConfig() {
 int pn532SetUp() {
   return samConfig();
 }
+
+void printFullFIFO() {
+  uint8_t fifoCount = readRegister(RegisterCIU_FIFOLevel);
+
+  printf("FIFO count: %d\n", fifoCount);
+
+  if (!fifoCount) return;
+
+  for (int i = 0; i < fifoCount; i++) {
+    printf("%02X ", readRegister(RegisterCIU_FIFOData));
+  }
+
+  printf("\n");
+}

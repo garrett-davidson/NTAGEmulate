@@ -116,3 +116,4 @@ inline void clearInterrupts() {
 }
 
 void printFullFIFO();
+void watchFIFO(uint8_t fifoLevel, int printInterval);

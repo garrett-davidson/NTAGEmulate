@@ -8,3 +8,4 @@ poll
 pn532speed.o
 listenpassive
 listenactive
+ntag-util

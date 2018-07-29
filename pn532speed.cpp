@@ -252,4 +252,10 @@ void watchFIFO(uint8_t fifoLevel, int printInterval) {
       readFIFODataLength = 0;
     }
   }
+
+  if (!readFIFODataLength) return;
+
+  // Print whatever data is left
+  printf("FIFO Data: %d\n", readFIFODataLength);
+  printHex(fifoData, readFIFODataLength);
 }

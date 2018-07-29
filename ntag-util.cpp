@@ -33,7 +33,7 @@ void readSig() {
     0x00,                       // Address (RFU)
   };
 
-  const int responseSize = 32 + 2; // Signature + CRC
+  const int responseSize = 32; // Signature
   uint8_t responseBuffer[responseSize];
 
   if (nfc_initiator_transceive_bytes(device, command, sizeof(command), responseBuffer, responseSize, 100) < 0) {
@@ -43,6 +43,26 @@ void readSig() {
 
   printf("Signature:\n");
   printHex(responseBuffer, responseSize);
+}
+
+void readPage(uint8_t page) {
+  const uint8_t command[] = {
+    CommandRead,
+    page,
+  };
+
+  const int responseSize = 16;
+  uint8_t responseBuffer[responseSize];
+
+  if (nfc_initiator_transceive_bytes(device, command, sizeof(command), responseBuffer, responseSize, 100) < 0) {
+    nfc_perror(device, "Read\n");
+    return;
+  }
+
+  for (int i = 0; i < 4; i++) {
+    printf("Page %d\n", page + i);
+    printHex(responseBuffer + (i*4), 4);
+  }
 }
 
 int main(int argc, char **argv) {
@@ -81,4 +101,5 @@ int main(int argc, char **argv) {
   nfc_device_set_property_bool(device, NP_EASY_FRAMING, false);
 
   readSig();
+  readPage(3);
 }

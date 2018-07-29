@@ -1,4 +1,5 @@
 #include <nfc/nfc.h>
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 

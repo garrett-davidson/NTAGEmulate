@@ -234,7 +234,11 @@ void watchFIFO(uint8_t fifoLevel, int printInterval) {
     fetchFIFOBuffer[dcsPosition + 1] = 0;
 
     // Write RegisterCIU_FIFOData, currentFIFOLevel times
-    memset_pattern4(fetchFIFOBuffer + 7, fifoPattern, currentFIFOLevel * 2);
+    uint16_t *bufferPointer = (uint16_t *)(fetchFIFOBuffer + 7);
+    const uint16_t address = (LOW(RegisterCIU_FIFOData) << 8) | HIGH(RegisterCIU_FIFOData); // Swap the two address bytes
+    for (int i = 0; i < currentFIFOLevel; i++) {
+      bufferPointer[i] = address;
+    }
 
     int fetchFIFOFrameLength = dcsPosition + 2;
     int responseSize = currentFIFOLevel + 9;

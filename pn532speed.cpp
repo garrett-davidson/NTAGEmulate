@@ -183,13 +183,8 @@ void printFullFIFO() {
   printf("\n");
 }
 
-void watchFIFO(uint8_t fifoLevel, int printInterval) {
-  uint8_t responseBuffer[500];
-
-  uint8_t fifoData[500];
-  int readFIFODataLength = 0;
-
-  uint8_t currentFIFOLevel = 0;
+int readFromFifo(uint8_t *buffer, int count) {
+  uint8_t responseBuffer[100];
   uint8_t fetchFIFOBuffer[140] = {
     0x00,                       // Preamble
     0x00,
@@ -199,54 +194,55 @@ void watchFIFO(uint8_t fifoLevel, int printInterval) {
     0xD4,                       // Direction
     0x06,                       // ReadRegister
   };
-  memset(fetchFIFOBuffer + 7, 0, sizeof(fetchFIFOBuffer) - 7);
 
-  writeRegister(RegisterCIU_WaterLevel, fifoLevel);
+  // Set length
+  // 2 bytes per register read + 1 for Direction + 1 for ReadRegister
+  fetchFIFOBuffer[3] = (count * 2) + 2;
 
-  const uint8_t fifoPattern[4] = {
-    HIGH(RegisterCIU_FIFOData),
-    LOW(RegisterCIU_FIFOData),
-    HIGH(RegisterCIU_FIFOData),
-    LOW(RegisterCIU_FIFOData)
-  };
+  // Set length checksum
+  fetchFIFOBuffer[4] = (uint8_t)(0 - fetchFIFOBuffer[3]);
+
+  // Set data checksum
+  int dcsPosition = 7 + (2 * count);
+  fetchFIFOBuffer[dcsPosition] = (uint8_t)(0
+                                           - fetchFIFOBuffer[5]
+                                           - fetchFIFOBuffer[6]
+                                           - (count * HIGH(RegisterCIU_FIFOData))
+                                           - (count * LOW(RegisterCIU_FIFOData))
+                                           );
+
+  // Set postamble
+  fetchFIFOBuffer[dcsPosition + 1] = 0;
+
+  // Write RegisterCIU_FIFOData, currentFIFOLevel times
+  uint16_t *bufferPointer = (uint16_t *)(fetchFIFOBuffer + 7);
+  const uint16_t address = (LOW(RegisterCIU_FIFOData) << 8) | HIGH(RegisterCIU_FIFOData); // Swap the two address bytes
+  for (int i = 0; i < count; i++) {
+    bufferPointer[i] = address;
+  }
+
+  int fetchFIFOFrameLength = dcsPosition + 2;
+  int responseSize = count + 9;
+  sendFrame(fetchFIFOBuffer, fetchFIFOFrameLength, responseBuffer, responseSize);
+  memcpy(buffer, responseBuffer + 7, count);
+
+  return count;
+}
+
+void watchFIFO(uint8_t fifoLevel, int printInterval) {
+  uint8_t fifoData[500];
+  int readFIFODataLength = 0;
+  uint8_t currentFIFOLevel = 0;
+
+  // HiAlert = (64 – FIFOLength) ≤ WaterLevel
+  writeRegister(RegisterCIU_WaterLevel, 64 - fifoLevel);
+
   while (!shouldQuit) {
-    awaitInterrupts(InterruptHiAlertIrq);
-
+    awaitStatus1(Status1HiAlert);
     currentFIFOLevel = readRegister(RegisterCIU_FIFOLevel);
+    readFIFODataLength += readFromFifo(fifoData + readFIFODataLength, currentFIFOLevel);
 
-    // Set length
-    // 2 bytes per register read + 1 for Direction + 1 for ReadRegister
-    fetchFIFOBuffer[3] = (currentFIFOLevel * 2) + 2;
-
-    // Set length checksum
-    fetchFIFOBuffer[4] = (uint8_t)(0 - fetchFIFOBuffer[3]);
-
-    // Set data checksum
-    int dcsPosition = 7 + (2*currentFIFOLevel);
-    fetchFIFOBuffer[dcsPosition] = (uint8_t)(0
-                                             - fetchFIFOBuffer[5]
-                                             - fetchFIFOBuffer[6]
-                                             - (currentFIFOLevel * HIGH(RegisterCIU_FIFOData))
-                                             - (currentFIFOLevel * LOW(RegisterCIU_FIFOData))
-                                             );
-
-    // Set postamble
-    fetchFIFOBuffer[dcsPosition + 1] = 0;
-
-    // Write RegisterCIU_FIFOData, currentFIFOLevel times
-    uint16_t *bufferPointer = (uint16_t *)(fetchFIFOBuffer + 7);
-    const uint16_t address = (LOW(RegisterCIU_FIFOData) << 8) | HIGH(RegisterCIU_FIFOData); // Swap the two address bytes
-    for (int i = 0; i < currentFIFOLevel; i++) {
-      bufferPointer[i] = address;
-    }
-
-    int fetchFIFOFrameLength = dcsPosition + 2;
-    int responseSize = currentFIFOLevel + 9;
-    sendFrame(fetchFIFOBuffer, fetchFIFOFrameLength, responseBuffer, responseSize);
-    memcpy(fifoData + readFIFODataLength, responseBuffer + 7, currentFIFOLevel);
-    readFIFODataLength += currentFIFOLevel;
-
-    if (readFIFODataLength > 100) {
+    if (readFIFODataLength > fifoLevel) {
       printf("FIFO Data: %d\n", readFIFODataLength);
       printHex(fifoData, readFIFODataLength);
       readFIFODataLength = 0;

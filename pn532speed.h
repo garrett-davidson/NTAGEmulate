@@ -16,6 +16,7 @@ enum Registers {
   RegisterCIU_CommIEn = 0x6332,
   RegisterCIU_CommIrq = 0x6334,
   RegisterCIU_Error = 0x6336,
+  RegisterCIU_Status1 = 0x6337,
   RegisterCIU_Status2 = 0x6338,
   RegisterCIU_FIFOData = 0x6339,
   RegisterCIU_FIFOLevel = 0x633A,
@@ -33,6 +34,10 @@ enum Interrupts {
   InterruptLoAlertIrq = 1 << 2,
   InterruptErrIrq = 1 << 1,
   InterruptTimerIrq = 1 << 0,
+};
+
+enum Status1 {
+  Status1HiAlert = 1 << 1,
 };
 
 extern bool shouldQuit;
@@ -103,6 +108,15 @@ inline uint8_t awaitInterrupts(uint8_t interrupts) {
   return irq;
 }
 
+inline uint8_t awaitStatus1(uint8_t status1) {
+  uint8_t status = 0;
+  while (!(status & status1) && !shouldQuit) {
+    status = readRegister(RegisterCIU_Status1);
+  }
+
+  return status;
+}
+
 inline uint8_t awaitReceive() {
   return awaitInterrupts(1 << 5); // RxIEn
 }
@@ -117,3 +131,4 @@ inline void clearInterrupts() {
 
 void printFullFIFO();
 void watchFIFO(uint8_t fifoLevel, int printInterval);
+int readFromFifo(uint8_t *buffer, int count);
